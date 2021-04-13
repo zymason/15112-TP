@@ -30,7 +30,7 @@ def mouseDragged(app, event):
     pass
 
 def mouseReleased(app, event):
-    print()
+    print("I made a change")
     pass
 
 def timerFired(app):
