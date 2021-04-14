@@ -14,16 +14,39 @@ def appStarted(app):
     app.offA = app.height // 10
     app.yCtr = [int((app.height * (1+(2*i))/6)) for i in range(3)]
     app.currPlayer = True   # True is P1, False is P2(AI)
-    pass
-
-def keyPressed(app, event):
+    app.winCoords = [None, None]
+    app.gameOver = False
+    app.winner = None
     pass
 
 def playPiece(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
         app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
         app.currPlayer = not app.currPlayer
+    pass
 
+# Need to check all opposites, not just pure opposite
+def checkWin(app):
+    oppPos = [0,0,0]
+    midPos = [0,0,0]
+    winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0),
+                (1,0,0), (1,0,1), (1,1,0), (1,2,0),
+                (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
+    for pos in winPoint:
+        for i in range(len(pos)):
+            oppPos[i] = pos[i] + 2*(1 - pos[i])
+
+        player = app.board[pos[0]][pos[1]][pos[2]]
+
+        if (player == app.board[oppPos[0]][oppPos[1]][oppPos[2]] and 
+            player != None):
+            for i in range(len(midPos)):
+                midPos[i] = int((pos[i] + oppPos[i]) / 2)
+            if app.board[midPos[0]][midPos[1]][midPos[2]] == player:
+                app.gameOver = True
+                app.winner = player
+                app.message = f"{str(player)} won!!"
+    pass
 
 def mousePressed(app, event):
     if (app.xCtr - app.offA) <= event.x < (app.xCtr + app.offA):
@@ -37,12 +60,11 @@ def mousePressed(app, event):
             app.message = f"{gridNum} | {gridRow}, {gridCol}"
             pos = (gridNum, gridRow, gridCol)
             playPiece(app, pos)
+            checkWin(app)
     pass
 
-def mouseDragged(app, event):
-    pass
-
-def mouseReleased(app, event):
+def keyPressed(app, event):
+    appStarted(app)
     pass
 
 def timerFired(app):
@@ -79,20 +101,43 @@ def drawPieces(app, canvas):
     for grid in range(len(app.board)):
         for row in range(len(app.board[0])):
             for col in range(len(app.board[0][0])):
-                if app.board[grid][row][col] != None:
+                player = app.board[grid][row][col]
+                if player != None:
                     x = app.xCtr + ((col-1) * dPos)
                     y = app.yCtr[grid] + ((row-1) * dPos)
-                    canvas.create_text(x,y,text=str(app.board[grid][row][col]),
-                            font='Arial 10 bold')
+                    if player:
+                        text = 'O'
+                        fill = '#00f'
+                    elif not player:
+                        text = 'X'
+                        fill = '#f00'
+                    canvas.create_text(x,y,text=text,fill=fill,
+                            font='Arial 20 bold')
+    pass
 
+def drawCurrPlayer(app, canvas):
+    r = 50
+    xCtr = app.width/3
+    yCtr = app.height/10 + 100
+    if app.currPlayer:
+        text = "Player 1: Your Turn"
+        fill = "#00f"
+        canvas.create_text(xCtr,yCtr,text="O",fill=fill,font="Arial 40 bold")
+    else:
+        text = "Player 2: Your Turn"
+        fill = "#f00"
+        canvas.create_text(xCtr,yCtr,text="X",fill=fill,font="Arial 40 bold")
+    canvas.create_text(xCtr,app.height/10,text=text,font="Arial 30 bold",
+            fill=fill)
+    pass
+    
 
 def redrawAll(app, canvas):
     for i in range(3):
         drawSingleGrid(app, canvas, i)
-
-
     drawPieces(app, canvas)
-    canvas.create_text(app.width/3, app.height/2, text=app.message,
+    drawCurrPlayer(app, canvas)
+    canvas.create_text(app.width/3, app.height*7/12, text=app.message,
             font='Arial 15 bold')
     pass
 
