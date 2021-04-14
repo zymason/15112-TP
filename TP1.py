@@ -3,34 +3,46 @@ import time
 import math as m
 
 def appStarted(app):
-    app.gameOver = False
-    app.currPlayer = True
-    app.board = [[[[None]*3]*3]*3]
-    app.menuScreen = True
-    app.gameScreen = False
-    app.gridDrawn = False
-    app.cubeChangeCurr = -1
-    app.cubeChangeOld = -1
+    # Consider a dictionary for board
+    col = [None, None, None]
+    row1 = [col[:], col[:], col[:]]
+    row2 = [col[:], col[:], col[:]]
+    row3 = [col[:], col[:], col[:]]
+    app.board = [row1[:], row2[:], row3[:]]
+    app.message = "null"
+    app.xCtr = 3*app.width // 4
+    app.offA = app.height // 10
+    app.yCtr = [int((app.height * (1+(2*i))/6)) for i in range(3)]
+    app.currPlayer = True   # True is P1, False is P2(AI)
     pass
 
 def keyPressed(app, event):
-    if event.key == 'p':
-        if app.cubeChangeCurr == 0:
-            app.cubeChangeCurr = app.cubeChangeOld
-        else:
-            app.cubeChangeOld = app.cubeChangeCurr
-            app.cubeChangeCurr = 0
     pass
 
+def playPiece(app, pos):
+    if app.board[pos[0]][pos[1]][pos[2]] == None:
+        app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
+        app.currPlayer = not app.currPlayer
+
+
 def mousePressed(app, event):
+    if (app.xCtr - app.offA) <= event.x < (app.xCtr + app.offA):
+        gridNum = int(event.y // (app.height/3))
+        if (app.yCtr[gridNum] - app.offA <= event.y < 
+            app.yCtr[gridNum] + app.offA):
+            gridXRef = app.xCtr - app.offA
+            gridYRef = app.yCtr[gridNum] - app.offA
+            gridRow = int((event.y - gridYRef) // (app.offA*2/3))
+            gridCol = int((event.x - gridXRef) // (app.offA*2/3))
+            app.message = f"{gridNum} | {gridRow}, {gridCol}"
+            pos = (gridNum, gridRow, gridCol)
+            playPiece(app, pos)
     pass
 
 def mouseDragged(app, event):
-    print(event.x, event.y)
     pass
 
 def mouseReleased(app, event):
-    print("I made a change")
     pass
 
 def timerFired(app):
@@ -62,9 +74,26 @@ def drawSingleGrid(app, canvas, i):
     canvas.create_text(app.width * 29/32,yCtr,text=text[i],font='Arial 15 bold')
     pass
 
+def drawPieces(app, canvas):
+    dPos = app.offA * 2/3
+    for grid in range(len(app.board)):
+        for row in range(len(app.board[0])):
+            for col in range(len(app.board[0][0])):
+                if app.board[grid][row][col] != None:
+                    x = app.xCtr + ((col-1) * dPos)
+                    y = app.yCtr[grid] + ((row-1) * dPos)
+                    canvas.create_text(x,y,text=str(app.board[grid][row][col]),
+                            font='Arial 10 bold')
+
+
 def redrawAll(app, canvas):
     for i in range(3):
         drawSingleGrid(app, canvas, i)
+
+
+    drawPieces(app, canvas)
+    canvas.create_text(app.width/3, app.height/2, text=app.message,
+            font='Arial 15 bold')
     pass
 
 runApp(width=1000,height=700)
