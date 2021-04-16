@@ -17,7 +17,6 @@ def appStarted(app):
     app.winCoords = [None, None]
     app.gameOver = False
     app.winner = None
-    pass
 
 def playPiece(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
@@ -25,27 +24,37 @@ def playPiece(app, pos):
         app.currPlayer = not app.currPlayer
     pass
 
-# Need to check all opposites, not just pure opposite
+def getOppPos(pos, index=0):
+    pos = list(pos)
+    output = []
+    if index == len(pos):
+        return []
+    else:
+        output += getOppPos(pos, index+1)
+        if pos[index]%2 == 0:
+            newPos = copy.copy(pos)
+            newPos[index] = abs(2-pos[index])
+            output += [newPos]
+            output += getOppPos(newPos, index+1)
+        return output
+
 def checkWin(app):
-    oppPos = [0,0,0]
     midPos = [0,0,0]
     winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0),
                 (1,0,0), (1,0,1), (1,1,0), (1,2,0),
                 (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
     for pos in winPoint:
-        for i in range(len(pos)):
-            oppPos[i] = pos[i] + 2*(1 - pos[i])
-
         player = app.board[pos[0]][pos[1]][pos[2]]
-
-        if (player == app.board[oppPos[0]][oppPos[1]][oppPos[2]] and 
-            player != None):
-            for i in range(len(midPos)):
-                midPos[i] = int((pos[i] + oppPos[i]) / 2)
-            if app.board[midPos[0]][midPos[1]][midPos[2]] == player:
-                app.gameOver = True
-                app.winner = player
-                app.message = f"{str(player)} won!!"
+        if player != None:
+            for oppPos in getOppPos(pos):
+                if (player == app.board[oppPos[0]][oppPos[1]][oppPos[2]] and 
+                    player != None):
+                    for i in range(len(midPos)):
+                        midPos[i] = int((pos[i] + oppPos[i]) / 2)
+                    if app.board[midPos[0]][midPos[1]][midPos[2]] == player:
+                        app.gameOver = True
+                        app.winner = player
+                        app.message = f"{str(player)} won!!"
     pass
 
 def mousePressed(app, event):
