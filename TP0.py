@@ -3,7 +3,6 @@ import time
 import math as m
 
 def appStarted(app):
-    # Consider a dictionary for board
     col = [None, None, None]
     row1 = [col[:], col[:], col[:]]
     row2 = [col[:], col[:], col[:]]
@@ -13,7 +12,7 @@ def appStarted(app):
     app.xCtr = 3*app.width // 4
     app.offA = app.height // 10
     app.yCtr = [int((app.height * (1+(2*i))/6)) for i in range(3)]
-    app.currPlayer = True   # True is P1, False is P2(AI)
+    app.currPlayer = True   # True is P1, False is P2/AI
     app.winCoords = [None, None]
     app.gameOver = False
     app.winner = None
