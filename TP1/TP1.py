@@ -2,7 +2,20 @@ from cmu_112_graphics import *
 import time
 import math as m
 
-def appStarted(app):
+class CartCoords(object):
+    def __init__(self, x0, y0, x1, y1, ident):
+        self.x0 = x0
+        self.y0 = y0
+        self.x1 = x1
+        self.y1 = y1
+        self.ident = ident
+
+class LargeBoard(object):
+    def __init__(self, board, winner):
+        self.board = board
+        self.winner = winner
+
+def initSingle(app):
     col = [None, None, None]
     row1 = [col[:], col[:], col[:]]
     row2 = [col[:], col[:], col[:]]
@@ -12,10 +25,22 @@ def appStarted(app):
     app.xCtr = 3*app.width // 4
     app.offA = app.height // 10
     app.yCtr = [int((app.height * (1+(2*i))/6)) for i in range(3)]
-    app.currPlayer = True   # True is P1, False is P2/AI
     app.winCoords = [None, None]
     app.gameOver = False
     app.winner = None
+    app.theta = 45
+    app.paused = False
+
+def appStarted(app):
+    initSingle(app)
+    app.timeInit = time.time()
+    app.timerDelay = 30
+    app.cubeSide = 400
+    app.cos30 = m.cos(m.pi/6)
+    col = [None, None, None]
+    app.largeBoard = [col[:], col[:], col[:]]
+    app.currPlayer = True   # True is P1, False is P2/AI
+    app.mode = "cube"
 
 def playPiece(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
@@ -37,7 +62,13 @@ def getOppPos(pos, index=0):
             output += getOppPos(newPos, index+1)
         return output
 
-def checkWin(app):
+def miniMax3():
+    pass
+
+def miniMax2():
+    pass
+
+def checkWin3(app):
     midPos = [0,0,0]
     winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0),
                 (1,0,0), (1,0,1), (1,1,0), (1,2,0),
@@ -56,7 +87,7 @@ def checkWin(app):
                         app.message = f"{str(player)} won!!"
     pass
 
-def mousePressed(app, event):
+def cube_mousePressed(app, event):
     if (app.xCtr - app.offA) <= event.x < (app.xCtr + app.offA):
         gridNum = int(event.y // (app.height/3))
         if (app.yCtr[gridNum] - app.offA <= event.y < 
@@ -68,15 +99,28 @@ def mousePressed(app, event):
             app.message = f"{gridNum} | {gridRow}, {gridCol}"
             pos = (gridNum, gridRow, gridCol)
             playPiece(app, pos)
-            checkWin(app)
+            checkWin3(app)
     pass
 
-def keyPressed(app, event):
-    appStarted(app)
+def cube_keyPressed(app, event):
+    if event.key == "r":
+        appStarted(app)
+    elif event.key == "p":
+        app.paused = not app.paused
+    elif event.key == "Up":
+        app.dTheta += 1
+    elif event.key == "Down":
+        app.dTheta -= 1
     pass
 
+'''
 def timerFired(app):
+    if time.time() - app.timeInit >= 2:
+        pass
+    if not app.paused:
+        app.theta += app.dTheta
     pass
+'''
 
 def drawSingleGrid(app, canvas, i):
     xCtr = app.width * 3/4
@@ -123,6 +167,9 @@ def drawPieces(app, canvas):
                             font='Arial 20 bold')
     pass
 
+def drawCube(app, canvas, CartCoords):
+    pass
+
 def drawCurrPlayer(app, canvas):
     r = 50
     xCtr = app.width/3
@@ -131,14 +178,13 @@ def drawCurrPlayer(app, canvas):
         text = "Player 1: Your Turn"
         fill = "#00f"
         canvas.create_text(xCtr,yCtr,text="O",fill=fill,font="Arial 40 bold")
-    else:
+    elif not app.currPlayer:
         text = "Player 2: Your Turn"
         fill = "#f00"
         canvas.create_text(xCtr,yCtr,text="X",fill=fill,font="Arial 40 bold")
     canvas.create_text(xCtr,app.height/10,text=text,font="Arial 30 bold",
             fill=fill)
     pass
-    
 
 def redrawAll(app, canvas):
     for i in range(3):
@@ -147,6 +193,9 @@ def redrawAll(app, canvas):
     drawCurrPlayer(app, canvas)
     canvas.create_text(app.width/3, app.height*7/12, text=app.message,
             font='Arial 15 bold')
+    pass
+
+def cube_redrawAll(app, canvas):
     pass
 
 runApp(width=1000,height=700)
