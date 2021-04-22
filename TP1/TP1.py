@@ -19,13 +19,18 @@ def initCube(app):
     app.winCoords = [None, None]
     app.gameOver = False
     app.winner = None
-    app.theta = 45
+    app.dTheta = m.pi/360
     app.paused = False
     app.cubeSide = 400
     app.timeInit = time.time()
-    app.cubeXY = [app.cubeSide/2,app.cubeSide/6,app.cubeSide/6]
-    app.cubeZ = [app.cubeSide/6,app.cubeSide/6,app.cubeSide/2]
-    app.cubeCtr = [app.width/3,app.height/2]
+    app.cubA = [app.cubeSide/2,app.cubeSide/6,app.cubeSide/6]
+    app.cubB = [app.cubeSide/2,-app.cubeSide/6,app.cubeSide/6]
+    app.cubZ = [app.cubeSide/6,0,app.cubeSide/2]
+    app.cubeA = copy.copy(app.cubA)
+    app.cubeB = copy.copy(app.cubB)
+    app.cubeZ = copy.copy(app.cubZ)
+    app.cubeCtr = [app.width/3,app.height * 7/12]
+    app.theta = 0
 
 def appStarted(app):
     initCube(app)
@@ -111,9 +116,9 @@ def cube_keyPressed(app, event):
     elif event.key == "p":
         app.paused = not app.paused
     elif event.key == "Up":
-        app.dTheta += 1
+        app.dTheta += m.pi/360
     elif event.key == "Down":
-        app.dTheta -= 1
+        app.dTheta -= m.pi/360
     # elif event.key == "s":
         # app.mode = "start"
     pass
@@ -124,14 +129,20 @@ def square_keyPressed(app, event):
 def start_keyPressed(app, event):
     pass
 
-'''
-def timerFired(app):
+def cube_timerFired(app):
     if time.time() - app.timeInit >= 2:
-        pass
-    if not app.paused:
+        x1, x2 = app.cubA[0], app.cubB[0]
+        y1, y2 = app.cubA[1], app.cubB[1]
+        x3, y3 = app.cubZ[0], app.cubZ[1]
+        app.cubeA[0] = x1*m.cos(app.theta) - y1*m.sin(app.theta)
+        app.cubeA[1] = -x1*m.sin(app.theta) + y1*m.cos(app.theta)
+        app.cubeB[0] = x2*m.cos(app.theta) - y2*m.sin(app.theta)
+        app.cubeB[1] = -x2*m.sin(app.theta) + y2*m.cos(app.theta)
+        app.cubeZ[0] = x3*m.cos(app.theta) - y3*m.sin(app.theta)
+        app.cubeZ[1] = -x3*m.sin(app.theta) + y3*m.cos(app.theta)
         app.theta += app.dTheta
     pass
-'''
+
 
 def drawSingleGrid(app, canvas, i):
     xCtr = app.width * 3/4
@@ -178,23 +189,36 @@ def drawPieces(app, canvas):
                             font='Arial 20 bold')
     pass
 
-def drawCubeLines(app, canvas, xList, yList):
-    z = app.cubeXY[2]
-    for i in [-1,1]:
+def drawCubeLines(app, canvas, xList, yList, z):
+    for i in [1]:
         for j in range(len(xList[1])):
             x0 = app.cubeCtr[0] - xList[0][j]*app.cos30 + yList[0][j]*app.cos30
             y0 = app.cubeCtr[1] - z*i + xList[0][j]/2 + yList[0][j]/2
             x1 = app.cubeCtr[0] - xList[1][j]*app.cos30 + yList[1][j]*app.cos30
             y1 = app.cubeCtr[1] - z*i + xList[1][j]/2 + yList[1][j]/2
-            canvas.create_line(x0,y0,x1,y1,width=2,fill=f"#{3*j}00")
+            canvas.create_line(x0,y0,x1,y1,width=2,fill='#000')
     pass
 
+def drawVertLines(app, canvas, xList, yList):
+    z = app.cubeZ[2]
+    for i in range(len(xList)):
+        print(i)
+        x0 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
+        y0 = app.cubeCtr[1] - z + xList[i]/2 + yList[i]/2
+        x1 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
+        y1 = app.cubeCtr[1] + z + xList[i]/2 + yList[i]/2
+        canvas.create_line(x0,y0,x1,y1,width=2,fill='#000')
+
 def drawCube(app, canvas):
-    xList = [[app.cubeXY[0], app.cubeXY[1], -app.cubeXY[1], -app.cubeXY[0]],
-            [-app.cubeXY[1], -app.cubeXY[0], app.cubeXY[0], app.cubeXY[1]]]
-    yList = [[app.cubeXY[1], app.cubeXY[0], app.cubeXY[0], app.cubeXY[1]],
-            [-app.cubeXY[0], -app.cubeXY[1], -app.cubeXY[1], -app.cubeXY[0]]]
-    drawCubeLines(app, canvas, xList, yList)
+    xList = [[app.cubeA[0], -app.cubeA[0], app.cubeA[1], -app.cubeA[1]],
+            [-app.cubeB[0], app.cubeB[0], -app.cubeB[1], app.cubeB[1]]]
+    yList = [[app.cubeA[1], -app.cubeA[1], -app.cubeA[0], app.cubeA[0]],
+            [-app.cubeB[1], app.cubeB[1], app.cubeB[0], -app.cubeB[0]]]
+    drawCubeLines(app, canvas, xList, yList, app.cubeA[2])
+
+    xList = [app.cubeZ[0], app.cubeZ[1], -app.cubeZ[0], -app.cubeZ[1]]
+    yList = [app.cubeZ[1], -app.cubeZ[0], -app.cubeZ[1], app.cubeZ[0]]
+    drawVertLines(app, canvas, xList, yList)
     pass
 
 def drawCurrPlayerMsg(app, canvas):
