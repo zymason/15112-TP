@@ -1,3 +1,6 @@
+# 15-112 Term Project
+# Zachary Mason
+
 from cmu_112_graphics import *
 import time
 import math as m
@@ -12,8 +15,8 @@ def appStarted(app):
     app.mode = "start"
     app.bigXCtr = app.width * 3/4
     app.bigYCtr = app.height/2
-    app.bigOffA = app.height/6
-    app.bigOffB = app.bigOffA/6
+    app.bigOffA = app.height/4
+    app.bigOffB = app.bigOffA/3
 
 def start_mousePressed(app, event):
     if event.y > app.width/7:
@@ -49,13 +52,11 @@ def checkWin2(app):
 def square_mousePressed(app,event):
     if (app.bigXCtr - app.bigOffA <= event.x < app.bigXCtr + app.bigOffA and
         app.bigYCtr - app.bigOffA <= event.y < app.bigYCtr + app.bigOffA):
-        row = int((-app.bigYCtr+event.y-app.bigOffB) // (app.bigOffA*2/3)) + 1
-        col = int((-app.bigXCtr+event.x-app.bigOffB) // (app.bigOffA*2/3)) + 1
+        row = int((event.y-app.bigYCtr+app.bigOffA)/(app.bigOffB*2))
+        col = int((event.x-app.bigXCtr+app.bigOffA)/(app.bigOffB*2))
         if app.bigBoard[row][col] == None:
-            print(row, col)
             app.currBigPos = [row, col]
-            app.bigBoard[row][col] = True
-            # initCube(app)
+            initCube(app)
     pass
 
 def square_keyPressed(app, event):
@@ -209,8 +210,6 @@ def cube_mousePressed(app, event):
 def cube_keyPressed(app, event):
     if event.key == "r":
         initCube(app)
-    elif event.key == "p":
-        app.paused = not app.paused
     elif event.key == "Up":
         app.dTheta += m.pi/360
         if app.dTheta > m.pi/36:
@@ -223,11 +222,12 @@ def cube_keyPressed(app, event):
         appStarted(app)
     elif event.key == 'e' and app.smallGameOver:
         app.bigBoard[app.currBigPos[0]][app.currBigPos[1]] = app.winnerSmall
+        app.currBigPlayer = not app.currBigPlayer
         app.mode = 'square'
     pass
 
 def cube_timerFired(app):
-    if time.time() - app.timeInit >= 2 and not app.rotateStarted:
+    if time.time() - app.timeInit >= 1 and not app.rotateStarted:
         app.rotateStarted = True
     if app.rotateStarted:
         x1, x2 = app.cubA[0], app.cubB[0]
@@ -346,7 +346,7 @@ def drawCurrPlayerMsg(app, canvas):
         text = "It's a Tie!"
         fill = "#000"
     if app.smallGameOver:
-        canvas.create_text(xCtr,app.height/10+30,text=app.smallMsg,
+        canvas.create_text(xCtr,app.height/10+30,text="Press e to exit...",
             font="Arial 15")
     canvas.create_text(xCtr,app.height/10,text=text,font="Arial 30 bold",
             fill=fill)
