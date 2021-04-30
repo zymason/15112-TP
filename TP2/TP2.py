@@ -6,22 +6,39 @@ import time
 import math as m
 import copy
 
+class LargeBoard(object):
+    def __init__(self, board, winner):
+        self.board = board
+        self.winner = winner
+
 def appStarted(app):
     app.timerDelay = 30
     app.cos30 = m.cos(m.pi/6)
     app.mode = "start"
 
+def cubeDims(app, size):
+    app.cubeSide = 400
+    app.cubA = [app.cubeSide/2,app.cubeSide/6,app.cubeSide/6]
+    app.cubB = [app.cubeSide/2,-app.cubeSide/6,app.cubeSide/6]
+    app.cubZ = [app.cubeSide/6,app.cubeSide/6,app.cubeSide/2]
+    app.cubeA = copy.copy(app.cubA)
+    app.cubeB = copy.copy(app.cubB)
+    app.cubeZ = copy.copy(app.cubZ)
+    app.cubeCtr = [app.width/3,app.height * 7/12]
+    
 def initSquare(app):
-    col = [None, None, None]
+    col = [LargeBoard(None,None), LargeBoard(None,None), LargeBoard(None,None)]
     app.bigBoard = [col[:], col[:], col[:]]
     app.currBigPlayer = True   # True is P1, False is P2/AI
     app.bigXCtr = app.width * 3/4
     app.bigYCtr = app.height/2
     app.bigOffA = app.height/4
     app.bigOffB = app.bigOffA/3
+    app.bigDrawBoard = None
     app.mode = "square"
     app.bigGameOver = False
     app.winnerBig = None
+    app.numBigMoves = 0
 
 def start_mousePressed(app, event):
     if event.y > app.width/7:
@@ -43,12 +60,24 @@ def start_redrawAll(app, canvas):
     canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
             font='Arial 60 bold',fill='#fff')
 
-class LargeBoard(object):
-    def __init__(self, board, winner):
-        self.board = board
-        self.winner = winner
+def miniFind2(board,player,depth=0):
+    newBoard = copy.copy(board)
+    scoreDict = {}
+    for row in range(len(newBoard)):
+        for col in range(len(row)):
+            if newBoard[row][col] == None:
+                miniFind2(board,player,depth+1)
 
-def miniMax2():
+def miniMax2(app):
+    if app.numBigMoves == 1:
+        if app.currBigPos[0] == 1 and app.currBigPos[1] == 1:
+            playSquare(app, 0, 0)
+        elif not (app.currBigPos[0] == 1 or app.currBigPos[1] == 1):
+            playSquare(app, 1, 1)
+        elif app.currBigPos[0] == 1 ^ app.currBigPos[1] == 1:
+            playSquare(app, 2-app.currBigPos[0], 2-app.currBigPos[1])
+    else:
+        miniFind2(app.board,app.currPlayer)
     pass
 
 def getOppPos2(pos, index=0):
@@ -65,34 +94,54 @@ def getOppPos2(pos, index=0):
             output += getOppPos3(newPos, index+1)
         return output
 
-def checkWin2(app):
+def switchPlayer2(app):
+    player, pos = checkWin2(app)
+    if player != None:
+        app.winnerBig = player
+        app.currBigPlayer = None
+        app.bigWinPos = copy.copy(pos)
+        app.bigGameOver = True
+    else:
+        app.currBigPlayer = not app.currBigPlayer
+
+def checkWin2(board):
+    # print(board)
     midPos = [0,0]
     winPoint = {(0,0), (1,0), (2,0), (0,1), (2,2)}
     for pos in winPoint:
-        if app.bigBoard[pos[0]][pos[1]] != None:
-            player = app.bigBoard[pos[0]][pos[1]]
-            for oppPos in getOppPos2(pos):
-                if player == app.bigBoard[oppPos[0]][oppPos[1]]:
-                    for i in range(len(midPos)):
-                        midPos[i] = int((pos[i] + oppPos[i]) / 2)
-                    if app.bigBoard[midPos[0]][midPos[1]] == player:
-                        app.winnerBig = player
-                        app.currBigPlayer = None
-                        app.bigWinPos = [pos, midPos, oppPos]
-                        app.bigGameOver = True
-    pass
+        if isinstance(board[pos[0]][pos[1]], LargeBoard):
+            if board[pos[0]][pos[1]].winner != None:
+                player = board[pos[0]][pos[1]].winner
+                for oppPos in getOppPos2(pos):
+                    if player == board[oppPos[0]][oppPos[1]].winner:
+                        for i in range(len(midPos)):
+                            midPos[i] = int((pos[i] + oppPos[i]) / 2)
+                        if board[midPos[0]][midPos[1]].winner == player:
+                            return player, [pos, midPos, oppPos]
+    return None, None
+
+def playSquare(app, row, col):
+    if app.bigBoard[row][col].winner == None:
+        app.currBigPos = [row, col]
+        board = copy.copy(app.bigBoard)
+        checkWin2(board)
+        app.numBigMoves += 1
+        initCube(app)
+    else:
+        app.bigDrawBoard = [row, col]
 
 def square_mousePressed(app,event):
     if app.bigGameOver:
         return
-    if (app.bigXCtr - app.bigOffA <= event.x < app.bigXCtr + app.bigOffA and
-        app.bigYCtr - app.bigOffA <= event.y < app.bigYCtr + app.bigOffA):
-        row = int((event.y-app.bigYCtr+app.bigOffA)/(app.bigOffB*2))
-        col = int((event.x-app.bigXCtr+app.bigOffA)/(app.bigOffB*2))
-        if app.bigBoard[row][col] == None:
-            app.currBigPos = [row, col]
-            checkWin2(app)
-            initCube(app)
+    if app.numPlayers == 2 or app.currBigPlayer:
+        if (app.bigXCtr - app.bigOffA <= event.x < app.bigXCtr + app.bigOffA and
+            app.bigYCtr - app.bigOffA <= event.y < app.bigYCtr + app.bigOffA):
+            row = int((event.y-app.bigYCtr+app.bigOffA)/(app.bigOffB*2))
+            col = int((event.x-app.bigXCtr+app.bigOffA)/(app.bigOffB*2))
+            playSquare(app, row, col)
+    elif app.currBigPlayer == False:
+        miniMax2(app)
+        playSquare(app, row, col)
     pass
 
 def square_keyPressed(app, event):
@@ -126,14 +175,14 @@ def drawBigPieces(app, canvas):
     dPos = app.bigOffA * 2/3
     for row in range(len(app.bigBoard)):
         for col in range(len(app.bigBoard[0])):
-            player = app.bigBoard[row][col]
+            player = app.bigBoard[row][col].winner
             if player != None:
                 x = app.bigXCtr + ((col-1) * dPos)
                 y = app.bigYCtr + ((row-1) * dPos)
                 if player:
                     text = 'O'
                     fill = '#00a'
-                elif not player:
+                elif player == False:
                     text = 'X'
                     fill = '#a00'
                 canvas.create_text(x,y,text=text,fill=fill,
@@ -172,7 +221,7 @@ def square_redrawAll(app, canvas):
     drawLargeGrid(app, canvas)
     drawBigPieces(app, canvas)
     drawCurrPlayerMsg2(app, canvas)
-    pass
+
 
 def initCube(app):
     col = [None, None, None]
@@ -188,26 +237,19 @@ def initCube(app):
     app.winnerSmall = None
     app.rotateStarted = False
     app.dTheta = m.pi/360
+    cubeDims(app, 400)      # Set Cube Drawing variables
     app.paused = False
     app.smallGameOver = False
     app.smallGOTime = False
     app.smallMsg = None
-    app.cubeSide = 400
     app.timeInit = time.time()
-    app.cubA = [app.cubeSide/2,app.cubeSide/6,app.cubeSide/6]
-    app.cubB = [app.cubeSide/2,-app.cubeSide/6,app.cubeSide/6]
-    app.cubZ = [app.cubeSide/6,app.cubeSide/6,app.cubeSide/2]
-    app.cubeA = copy.copy(app.cubA)
-    app.cubeB = copy.copy(app.cubB)
-    app.cubeZ = copy.copy(app.cubZ)
-    app.cubeCtr = [app.width/3,app.height * 7/12]
     app.theta = 0
     app.numMoves = 0
     app.winPos = []
     checkWin3(app)
     app.mode = "cube"
 
-def playPiece(app, pos):
+def playPiece3(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
         app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
         app.currPlayer = not app.currPlayer
@@ -233,8 +275,8 @@ def getOppPos3(pos, index=0):
 
 def checkWin3(app):
     midPos = [0,0,0]
-    winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0),
-                (1,0,0), (1,0,1), (1,1,0), (1,2,0), (1,2,2)
+    winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0), (0,0,2),
+                (1,0,0), (1,0,1), (1,1,0), (1,2,0), (1,2,2),
                 (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
     if app.numMoves == 27:
         app.winnerSmall = None
@@ -267,7 +309,7 @@ def cube_mousePressed(app, event):
             gridRow = int((event.y - gridYRef) // (app.offATri*2/3))
             gridCol = int((event.x - gridXRef) // (app.offATri*2/3))
             pos = (gridNum, gridRow, gridCol)
-            playPiece(app, pos)
+            playPiece3(app, pos)
             checkWin3(app)
     pass
 
@@ -285,9 +327,11 @@ def cube_keyPressed(app, event):
     elif event.key == 'q':
         appStarted(app)
     elif event.key == 'e' and app.smallGameOver:
-        app.bigBoard[app.currBigPos[0]][app.currBigPos[1]] = app.winnerSmall
+        app.bigBoard[app.currBigPos[0]][app.currBigPos[1]] = LargeBoard(
+                    copy.copy(app.board), app.winnerSmall)
         app.currBigPlayer = not app.currBigPlayer
-        checkWin2(app)
+        checkWin2(app.bigBoard)
+        # print(app.bigBoard)
         app.mode = 'square'
     pass
 
