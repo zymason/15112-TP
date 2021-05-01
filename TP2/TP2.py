@@ -97,7 +97,7 @@ def playable(board):
 
 def miniFind2(board,player):
     newBoard = copy.deepcopy(board)
-    winner = checkWin2(newBoard)
+    winner = checkWin2(newBoard)[0]
     winners = []
     spotLeft = playable(board)
     if winner == False:
@@ -199,7 +199,6 @@ def playSquare(app, row, col):
     if app.bigWinners[row][col] == None:
         app.currBigPos = [row, col]
         board = copy.copy(app.bigWinners)
-        checkWin2(board)
         app.numBigMoves += 1
         initCube(app)
     else:
@@ -377,8 +376,8 @@ def miniFind3():
 # 3D strategy adapted from: 
 # https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
 def miniMax3(app):
-    if app.numSmallMoves == 0 or app.numSmallMoves == 1:
-        if app.board[1][1][1] == None:
+    if app.board[1][1][1] == None:
+        if app.numSmallMoves == 0 or app.numSmallMoves == 1:
             return (1,1,1)
     else:
         winners = []
@@ -399,7 +398,7 @@ def miniMax3(app):
                             inList = copy.deepcopy(app.board)
                             winner = miniFind2(inList,app.currPlayer)
                             winners.append(winner)
-                            positions.append((row,col))
+                            positions.append((grid,row,col))
         if winners.count(False) > 0:
             i = winners.index(False)
             return positions[i]
