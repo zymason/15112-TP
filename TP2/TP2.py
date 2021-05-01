@@ -68,20 +68,23 @@ def pieces2(board, opponent):
         for col in range(len(board[0])):
             for dRow in dPos:
                 if not (0 <= row+2*dRow <= 2):
-                    break
+                    continue
                 for dCol in dPos:
-                    if not (0 < row+2*dCol <= 2):
-                        break
+                    if not (0 <= col+2*dCol <= 2) or (dRow == dCol == 0):
+                        continue
                     count = 0
                     pos = [[row,col],[row+dRow,col+dCol],[row+2*dRow,col+2*dCol]]
-                    for i in [0,1,2]:
-                        piece = board[row+i*dRow][col+i*dCol].winner
+                    i = 0
+                    while i < len(pos):
+                        piece = board[pos[i][0]][pos[i][1]]
                         if piece == opponent:
                             count += 1
-                            pos.pop(i)
-                        elif piece == (not opponent):
+                            pos.remove(pos[i])
+                            continue
+                        elif piece == (not opponent) and opponent != None:
                             break
-                    if count == 2:
+                        i += 1
+                    if count == 2 and board[pos[0][0]][pos[0][1]] == None:
                         return pos[0]
     return None
 
@@ -92,70 +95,75 @@ def playable(board):
                 return True
     return False
 
-def miniFind2(board,player,depth=0):
+def miniFind2(board,player):
     newBoard = copy.deepcopy(board)
     winner = checkWin2(newBoard)
     winners = []
-    depths = []
     spotLeft = playable(board)
     if winner == False:
-        return winner, depth
+        return winner
     elif not spotLeft:
-        return None, depth
+        return None
     else:
         imperativePos = pieces2(newBoard, (not player))
         if imperativePos != None:
             newBoard[imperativePos[0]][imperativePos[1]] == player
-            winner, depth = miniFind2(newBoard,(not player),scoreDict,depth+1)
-            return winner, depth
+            winner = miniFind2(newBoard,(not player))
+            return winner
         else:
             for row in range(len(newBoard)):
                 for col in range(len(newBoard[0])):
                     if newBoard[row][col] == None:
                         newBoard = copy.deepcopy(board)
                         newBoard[row][col] = player
-                        winner,depth = miniFind2(newBoard,(not player),depth+1)
+                        winner = miniFind2(newBoard,(not player))
                         winners.append(winner)
-                        depths.append(depth)
             if winners.count(False) > 0:
                 i = winners.index(False)
-                return False, depths[i]
+                return False
             elif winners.count(None) > 0:
                 i = winners.index(None)
-                return None, depths[i]
+                return None
             else:
                 i = winners.index(True)
-                return True, depths[i]
+                return True
 
+# 2D strategy adapted from: https://www.rd.com/article/how-to-win-tic-tac-toe/
 def miniMax2(app):
     if app.numBigMoves == 1:
+        # P1 Center
         if app.currBigPos[0] == 1 and app.currBigPos[1] == 1:
             return (0,0)
+        # P1 Corner
         elif not (app.currBigPos[0] == 1 or app.currBigPos[1] == 1):
             return (1,1)
+        # P1 Edge
         elif app.currBigPos[0] == 1 ^ app.currBigPos[1] == 1:
-            return (2-app.currBigPos[0], 2-app.currBigPos[1])
+            return (1,1)
     else:
-        print("MINIMAX RAN")
         winners = []
-        depths = []
         positions = []
-        minDepth = 20
-        print(app.bigWinners)
-        for row in range(len(app.bigWinners)):
-            for col in range(len(app.bigWinners[0])):
-                if app.bigWinners[row][col] == None:
-                    inList = copy.deepcopy(app.bigWinners)
-                    winner, depth = miniFind2(inList,app.currPlayer)
-                    print((row,col), winner)
-                    winners.append(winner)
-                    positions.append((row,col))
+        imperative1 = pieces2(app.bigWinners, True)
+        imperative2 = pieces2(app.bigWinners, False)
+        # If P2 is about to win, make P2 win
+        if imperative2 != None:
+            return imperative2
+        # Prevents P1 from winning
+        elif imperative1 != None:
+            return imperative1
+        else:
+            for row in range(len(app.bigWinners)):
+                for col in range(len(app.bigWinners[0])):
+                    if app.bigWinners[row][col] == None:
+                        inList = copy.deepcopy(app.bigWinners)
+                        winner = miniFind2(inList,app.currBigPlayer)
+                        winners.append(winner)
+                        positions.append((row,col))
         if winners.count(False) > 0:
             i = winners.index(False)
             return positions[i]
         elif winners.count(None) > 0:
             i = winners.index(None)
-            print(positions[i])
             return positions[i]
 
 def switchPlayer2(app):
@@ -165,6 +173,10 @@ def switchPlayer2(app):
         app.currBigPlayer = None
         app.bigWinPos = copy.copy(pos)
         app.bigGameOver = True
+    elif app.numBigMoves == 9:
+        app.currBigPlayer = None
+        app.bigGameOver = True
+        app.winnerBig = None
     else:
         app.currBigPlayer = not app.currBigPlayer
     app.mode = 'square'
@@ -184,7 +196,6 @@ def checkWin2(board):
     return None, None
 
 def playSquare(app, row, col):
-    print("I switched")
     if app.bigWinners[row][col] == None:
         app.currBigPos = [row, col]
         board = copy.copy(app.bigWinners)
@@ -286,7 +297,6 @@ def square_redrawAll(app, canvas):
     drawBigPieces(app, canvas)
     drawCurrPlayerMsg2(app, canvas)
 
-
 def initCube(app):
     col = [None, None, None]
     row1 = [col[:], col[:], col[:]]
@@ -309,6 +319,7 @@ def initCube(app):
     app.timeInit = time.time()
     app.theta = 0
     app.winPos = []
+    app.numSmallMoves = 0
     checkWin3(app)
     app.mode = "cube"
 
@@ -316,9 +327,85 @@ def playPiece3(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
         app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
         app.currPlayer = not app.currPlayer
+        app.numSmallMoves += 1
+    checkWin3(app)
     pass
 
+def pieces3Help(board, opponent, grid, row, col):
+    dPos = [-1,0,1]
+    for dGrid in dPos:
+        if not (0 <= grid+2*dGrid <= 2):
+            continue
+        for dRow in dPos:
+            if not (0 <= row+2*dRow <= 2):
+                continue
+            for dCol in dPos:
+                if not (0 <= col+2*dCol <= 2) or (dRow == dCol == 0):
+                    continue
+                count = 0
+                pos = ([[grid,row,col],[grid+dGrid,row+dRow,col+dCol],
+                        [grid+2*dGrid,row+2*dRow,col+2*dCol]])
+                i = 0
+                while i < len(pos):
+                    piece = board[pos[i][0]][pos[i][1]][pos[i][2]]
+                    if piece == opponent:
+                        count += 1
+                        pos.remove(pos[i])
+                        continue
+                    elif piece == (not opponent) and opponent != None:
+                        break
+                    i += 1
+                if (count == 2 and 
+                        board[pos[0][0]][pos[0][1]][pos[0][2]] == None):
+                    return pos[0]
+    return None
+
+def pieces3(board, opponent):
+    for grid in range(len(board)):
+        for row in range(len(board[0])):
+            for col in range(len(board[0][0])):
+                output = pieces3Help(board, opponent, grid, row, col)
+                if output == None:
+                    continue
+                else:
+                    return output
+    return None
+
+def miniFind3():
+    pass
+    
+# 3D strategy adapted from: 
+# https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
 def miniMax3(app):
+    if app.numSmallMoves == 0 or app.numSmallMoves == 1:
+        if app.board[1][1][1] == None:
+            return (1,1,1)
+    else:
+        winners = []
+        positions = []
+        imperative1 = pieces3(app.board, True)
+        imperative2 = pieces3(app.board, False)
+        # If P2 is about to win, make P2 win
+        if imperative2 != None:
+            return imperative2
+        # Prevents P1 from winning
+        elif imperative1 != None:
+            return imperative1
+        else:
+            for grid in range(len(app.board)):
+                for row in range(len(app.board[0])):
+                    for col in range(len(app.board[0][0])):
+                        if app.board[grid][row][col] == None:
+                            inList = copy.deepcopy(app.board)
+                            winner = miniFind2(inList,app.currPlayer)
+                            winners.append(winner)
+                            positions.append((row,col))
+        if winners.count(False) > 0:
+            i = winners.index(False)
+            return positions[i]
+        elif winners.count(None) > 0:
+            i = winners.index(None)
+            return positions[i]
     pass
 
 def getOppPos(pos, index=0):
@@ -358,17 +445,20 @@ def checkWin3(app):
 def cube_mousePressed(app, event):
     if not app.rotateStarted:
         return
-    if (app.xCtrTri - app.offATri) <= event.x < (app.xCtrTri + app.offATri):
-        gridNum = int(event.y // (app.height/3))
-        if (app.yCtrTri[gridNum] - app.offATri <= event.y < 
-            app.yCtrTri[gridNum] + app.offATri):
-            gridXRef = app.xCtrTri - app.offATri
-            gridYRef = app.yCtrTri[gridNum] - app.offATri
-            gridRow = int((event.y - gridYRef) // (app.offATri*2/3))
-            gridCol = int((event.x - gridXRef) // (app.offATri*2/3))
-            pos = (gridNum, gridRow, gridCol)
-            playPiece3(app, pos)
-            checkWin3(app)
+    if app.numPlayers == 2 or app.currPlayer:
+        if (app.xCtrTri - app.offATri) <= event.x < (app.xCtrTri + app.offATri):
+            gridNum = int(event.y // (app.height/3))
+            if (app.yCtrTri[gridNum] - app.offATri <= event.y < 
+                app.yCtrTri[gridNum] + app.offATri):
+                gridXRef = app.xCtrTri - app.offATri
+                gridYRef = app.yCtrTri[gridNum] - app.offATri
+                gridRow = int((event.y - gridYRef) // (app.offATri*2/3))
+                gridCol = int((event.x - gridXRef) // (app.offATri*2/3))
+                pos = (gridNum, gridRow, gridCol)
+                playPiece3(app, pos)
+    elif app.currPlayer == False and app.numPlayers == 1:
+        pos = miniMax3(app)
+        playPiece3(app, pos)
     pass
 
 def cube_keyPressed(app, event):
