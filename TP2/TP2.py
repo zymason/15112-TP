@@ -1,23 +1,29 @@
 # 15-112 Term Project
 # Zachary Mason
+# 2D strategy adapted from: https://www.rd.com/article/how-to-win-tic-tac-toe/
+# 3D strategy adapted from: 
+#       https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
 
 from cmu_112_graphics import *
 import time
 import math as m
 import copy
 
+# Class to keep track of past games
 class LargeBoard(object):
     def __init__(self, board, winner):
         self.board = board
         self.winner = winner
 
+# Starts whole app
 def appStarted(app):
     app.timerDelay = 30
     app.cos30 = m.cos(m.pi/6)
     app.mode = "start"
 
+# Sets dimensions of the 3D cube
 def cubeDims(app, size):
-    app.cubeSide = 400
+    app.cubeSide = size
     app.cubA = [app.cubeSide/2,app.cubeSide/6,app.cubeSide/6]
     app.cubB = [app.cubeSide/2,-app.cubeSide/6,app.cubeSide/6]
     app.cubZ = [app.cubeSide/6,app.cubeSide/6,app.cubeSide/2]
@@ -25,7 +31,30 @@ def cubeDims(app, size):
     app.cubeB = copy.copy(app.cubB)
     app.cubeZ = copy.copy(app.cubZ)
     app.cubeCtr = [app.width/3,app.height * 7/12]
-    
+
+# Sets number of players
+def start_mousePressed(app, event):
+    if event.y > app.width/7:
+        if event.x < app.width/2:
+            app.numPlayers = 1
+        else:
+            app.numPlayers = 2
+        initSquare(app)
+
+# Draws two halves
+def start_redrawAll(app, canvas):
+    canvas.create_rectangle(0,app.height/7,app.width/2,app.height,
+            width=0,fill='#a00')
+    canvas.create_rectangle(app.width,app.height/7,app.width/2,app.height,
+            width=0,fill='#00a')
+    canvas.create_text(app.width/2,50,
+            text="Welcome to Ultimate 3D Tic Tac Toe!",font='Arial 50 bold')
+    canvas.create_text(app.width/4,app.width/3,text="Single Player",
+            font='Arial 60 bold')
+    canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
+            font='Arial 60 bold',fill='#fff')
+
+# Initializes all variables for the large 2D grid, only called once
 def initSquare(app):
     col = [LargeBoard(None,None), LargeBoard(None,None), LargeBoard(None,None)]
     app.bigBoard = [col[:], col[:], col[:]]
@@ -42,26 +71,7 @@ def initSquare(app):
     app.winnerBig = None
     app.numBigMoves = 0
 
-def start_mousePressed(app, event):
-    if event.y > app.width/7:
-        if event.x < app.width/2:
-            app.numPlayers = 1
-        else:
-            app.numPlayers = 2
-        initSquare(app)
-
-def start_redrawAll(app, canvas):
-    canvas.create_rectangle(0,app.height/7,app.width/2,app.height,
-            width=0,fill='#a00')
-    canvas.create_rectangle(app.width,app.height/7,app.width/2,app.height,
-            width=0,fill='#00a')
-    canvas.create_text(app.width/2,50,
-            text="Welcome to Ultimate 3D Tic Tac Toe!",font='Arial 50 bold')
-    canvas.create_text(app.width/4,app.width/3,text="Single Player",
-            font='Arial 60 bold')
-    canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
-            font='Arial 60 bold',fill='#fff')
-
+# Checks if there are two pieces in a row for 2D, returns empty position or None
 def pieces2(board, opponent):
     dPos = [-1,0,1]
     for row in range(len(board)):
@@ -73,14 +83,16 @@ def pieces2(board, opponent):
                     if not (0 <= col+2*dCol <= 2) or (dRow == dCol == 0):
                         continue
                     count = 0
+                    # Checks every position-direction combination
                     pos = [[row,col],[row+dRow,col+dCol],[row+2*dRow,col+2*dCol]]
                     i = 0
                     while i < len(pos):
                         piece = board[pos[i][0]][pos[i][1]]
                         if piece == opponent:
                             count += 1
-                            pos.remove(pos[i])
+                            pos.remove(pos[i])  # Remove pos if piece is there
                             continue
+                        # Break if there is opponent piece in the 3-in-a-row
                         elif piece == (not opponent) and opponent != None:
                             break
                         i += 1
@@ -88,6 +100,7 @@ def pieces2(board, opponent):
                         return pos[0]
     return None
 
+# Checks if there are any spots left on the board, used in recursive
 def playable(board):
     for row in board:
         for item in row:
@@ -95,7 +108,8 @@ def playable(board):
                 return True
     return False
 
-def miniFind2(board,player):
+# Recursive function for minimax algorithms (both 2D and 3D)
+def miniFind(board,player):
     newBoard = copy.deepcopy(board)
     winner = checkWin2(newBoard)[0]
     winners = []
@@ -108,7 +122,7 @@ def miniFind2(board,player):
         imperativePos = pieces2(newBoard, (not player))
         if imperativePos != None:
             newBoard[imperativePos[0]][imperativePos[1]] == player
-            winner = miniFind2(newBoard,(not player))
+            winner = miniFind(newBoard,(not player))
             return winner
         else:
             for row in range(len(newBoard)):
@@ -116,7 +130,7 @@ def miniFind2(board,player):
                     if newBoard[row][col] == None:
                         newBoard = copy.deepcopy(board)
                         newBoard[row][col] = player
-                        winner = miniFind2(newBoard,(not player))
+                        winner = miniFind(newBoard,(not player))
                         winners.append(winner)
             if winners.count(False) > 0:
                 i = winners.index(False)
@@ -128,7 +142,8 @@ def miniFind2(board,player):
                 i = winners.index(True)
                 return True
 
-# 2D strategy adapted from: https://www.rd.com/article/how-to-win-tic-tac-toe/
+
+# Wrapper function for miniMax, returns position that will end up as a win/tie
 def miniMax2(app):
     if app.numBigMoves == 1:
         # P1 Center
@@ -156,7 +171,7 @@ def miniMax2(app):
                 for col in range(len(app.bigWinners[0])):
                     if app.bigWinners[row][col] == None:
                         inList = copy.deepcopy(app.bigWinners)
-                        winner = miniFind2(inList,app.currBigPlayer)
+                        winner = miniFind(inList,app.currBigPlayer)
                         winners.append(winner)
                         positions.append((row,col))
         if winners.count(False) > 0:
@@ -166,6 +181,7 @@ def miniMax2(app):
             i = winners.index(None)
             return positions[i]
 
+# Checks 2D win after cube game finished, goes back to square
 def switchPlayer2(app):
     player, pos = checkWin2(app.bigWinners)
     if player != None:
@@ -181,6 +197,7 @@ def switchPlayer2(app):
         app.currBigPlayer = not app.currBigPlayer
     app.mode = 'square'
 
+# Checks for 2D win, returns player and winning position
 def checkWin2(board):
     midPos = [0,0]
     winPoint = {(0,0), (1,0), (2,0), (0,1), (2,2)}
@@ -195,6 +212,7 @@ def checkWin2(board):
                         return player, [pos, midPos, oppPos]
     return None, None
 
+# Places piece on 2D board, then moves to cube game
 def playSquare(app, row, col):
     if app.bigWinners[row][col] == None:
         app.currBigPos = [row, col]
@@ -204,6 +222,7 @@ def playSquare(app, row, col):
     else:
         app.bigDrawBoard = [row, col]
 
+# Handles mouse clicks in 2D game
 def square_mousePressed(app,event):
     if app.bigGameOver:
         return
@@ -218,11 +237,13 @@ def square_mousePressed(app,event):
         playSquare(app, pos[0], pos[1])
     pass
 
+# Handles keypresses in 2D game
 def square_keyPressed(app, event):
     if event.key == 'q':
         appStarted(app)
     pass
 
+# Draws the 2D grid
 def drawLargeGrid(app, canvas):
     xCtr = app.bigXCtr
     yCtr = app.bigYCtr
@@ -245,6 +266,7 @@ def drawLargeGrid(app, canvas):
     canvas.create_line(LHxL,L4y,LHxR,L4y,width=width)
     pass
 
+# Draws 2D game pieces
 def drawBigPieces(app, canvas):
     dPos = app.bigOffA * 2/3
     for row in range(len(app.bigWinners)):
@@ -263,6 +285,7 @@ def drawBigPieces(app, canvas):
                         font='Arial 40 bold')
     pass
 
+# Writes text to show current player, and win state
 def drawCurrPlayerMsg2(app, canvas):
     r = 50
     xCtr = app.width/3
@@ -291,11 +314,13 @@ def drawCurrPlayerMsg2(app, canvas):
             fill=fill)
     pass
 
+# Calls all 2D mode draw functions
 def square_redrawAll(app, canvas):
     drawLargeGrid(app, canvas)
     drawBigPieces(app, canvas)
     drawCurrPlayerMsg2(app, canvas)
 
+# Initializes all variables for 3D game, called on every new 2D position
 def initCube(app):
     col = [None, None, None]
     row1 = [col[:], col[:], col[:]]
@@ -322,6 +347,7 @@ def initCube(app):
     checkWin3(app)
     app.mode = "cube"
 
+# Plays 3D piece at position, checks for win
 def playPiece3(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
         app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
@@ -330,6 +356,7 @@ def playPiece3(app, pos):
     checkWin3(app)
     pass
 
+# Helper function for pieces3
 def pieces3Help(board, opponent, grid, row, col):
     dPos = [-1,0,1]
     for dGrid in dPos:
@@ -359,6 +386,7 @@ def pieces3Help(board, opponent, grid, row, col):
                     return pos[0]
     return None
 
+# Finds if 2-in-a-row on 3D grid, returns position of empty space or None
 def pieces3(board, opponent):
     for grid in range(len(board)):
         for row in range(len(board[0])):
@@ -370,11 +398,7 @@ def pieces3(board, opponent):
                     return output
     return None
 
-def miniFind3():
-    pass
-    
-# 3D strategy adapted from: 
-# https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
+# 3D minimax, returns position to guarantee win. Same recursive function as 2D
 def miniMax3(app):
     if app.board[1][1][1] == None:
         if app.numSmallMoves == 0 or app.numSmallMoves == 1:
@@ -396,7 +420,7 @@ def miniMax3(app):
                     for col in range(len(app.board[0][0])):
                         if app.board[grid][row][col] == None:
                             inList = copy.deepcopy(app.board)
-                            winner = miniFind2(inList,app.currPlayer)
+                            winner = miniFind(inList,app.currPlayer)
                             winners.append(winner)
                             positions.append((grid,row,col))
         if winners.count(False) > 0:
@@ -407,6 +431,7 @@ def miniMax3(app):
             return positions[i]
     pass
 
+# Returns a list of all positions opposite to input position
 def getOppPos(pos, index=0):
     pos = list(pos)
     output = []
@@ -421,6 +446,7 @@ def getOppPos(pos, index=0):
             output += getOppPos(newPos, index+1)
         return output
 
+# Checks for a win in the 3D game, updates conditions as necessary
 def checkWin3(app):
     midPos = [0,0,0]
     winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0), (0,0,2),
@@ -441,6 +467,7 @@ def checkWin3(app):
                         return
     pass
 
+# Handles mouse clicks for 3D game, primarily piece placement
 def cube_mousePressed(app, event):
     if not app.rotateStarted:
         return
@@ -460,6 +487,7 @@ def cube_mousePressed(app, event):
         playPiece3(app, pos)
     pass
 
+# Handles keypresses for 3D game
 def cube_keyPressed(app, event):
     if event.key == "r":
         initCube(app)
@@ -480,6 +508,7 @@ def cube_keyPressed(app, event):
         switchPlayer2(app)
     pass
 
+# Prevents movement/play before given time, updates rotating cube coordinates
 def cube_timerFired(app):
     if time.time() - app.timeInit >= 1 and not app.rotateStarted:
         app.rotateStarted = True
@@ -497,6 +526,7 @@ def cube_timerFired(app):
         app.theta %= 2*m.pi
     pass
 
+# Draws one 2D grid of 3 total
 def drawSingleGrid(app, canvas, i):
     xCtr = app.width * 3/4
     yCtr = (app.height * (1+(2*i))/6)
@@ -523,6 +553,7 @@ def drawSingleGrid(app, canvas, i):
     canvas.create_text(app.width * 29/32,yCtr,text=text[i],font='Arial 15 bold')
     pass
 
+# Draws pieces on the 2D grid
 def drawPieces(app, canvas):
     dPos = app.offATri * 2/3
     for grid in range(len(app.board)):
@@ -547,6 +578,7 @@ def drawPieces(app, canvas):
             canvas.create_text(x,y,text='O',fill='#0a0',font='Arial 50 bold')
     pass
 
+# Draws horizontal wireframe lines for rotating cube
 def drawCubeLines(app, canvas, xList, yList, z):
     for i in [-1,1]:
         for j in range(len(xList[1])):
@@ -557,6 +589,7 @@ def drawCubeLines(app, canvas, xList, yList, z):
             canvas.create_line(x0,y0,x1,y1,width=2)
     pass
 
+# Draws vertical wireframe lines for rotating cube
 def drawVertLines(app, canvas, xList, yList):
     z = app.cubeZ[2]
     for i in range(len(xList)):
@@ -566,6 +599,7 @@ def drawVertLines(app, canvas, xList, yList):
         y1 = app.cubeCtr[1] + z + xList[i]/2 + yList[i]/2
         canvas.create_line(x0,y0,x1,y1,width=2)
 
+# Draws all lines for the cube
 def drawCube(app, canvas):
     xList = [[app.cubeA[0], -app.cubeA[0], app.cubeA[1], -app.cubeA[1]],
             [-app.cubeB[0], app.cubeB[0], -app.cubeB[1], app.cubeB[1]]]
@@ -578,6 +612,7 @@ def drawCube(app, canvas):
     drawVertLines(app, canvas, xList, yList)
     pass
 
+# Draws current player/winner
 def drawCurrPlayerMsg(app, canvas):
     r = 50
     xCtr = app.width/3
@@ -606,6 +641,7 @@ def drawCurrPlayerMsg(app, canvas):
             fill=fill)
     pass
 
+# Calls all 3D mode drawing functions
 def cube_redrawAll(app, canvas):
     for i in range(3):
         drawSingleGrid(app, canvas, i)
