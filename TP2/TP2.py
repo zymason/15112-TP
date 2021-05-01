@@ -65,7 +65,7 @@ def start_redrawAll(app, canvas):
 def pieces2(board, opponent):
     dPos = [-1,0,1]
     for row in range(len(board)):
-        for col in range(len(row)):
+        for col in range(len(board[0])):
             for dRow in dPos:
                 if not (0 <= row+2*dRow <= 2):
                     break
@@ -86,61 +86,77 @@ def pieces2(board, opponent):
     return None
 
 def playable(board):
-    for row in newBoard:
+    for row in board:
         for item in row:
             if item == None:
                 return True
     return False
 
-
 def miniFind2(board,player,depth=0):
-    newBoard = copy.copy(board)
-    scoreDict = {}
-    imperativePos = pieces2(newBoard, (not player))
+    newBoard = copy.deepcopy(board)
     winner = checkWin2(newBoard)
+    winners = []
+    depths = []
     spotLeft = playable(board)
-    if winner != None:
+    if winner == False:
         return winner, depth
     elif not spotLeft:
         return None, depth
     else:
-        for row in range(len(newBoard)):
-            for col in range(len(row)):
-                if newBoard[row][col] == None:
-                    newerBoard copy.copy(newBoard)
-                    newerBoard[row][col] = player
-                    winner,depth = miniFind2(newerBoard,(not player),scoreDict,
-                            depth+1)
-                    
+        imperativePos = pieces2(newBoard, (not player))
+        if imperativePos != None:
+            newBoard[imperativePos[0]][imperativePos[1]] == player
+            winner, depth = miniFind2(newBoard,(not player),scoreDict,depth+1)
+            return winner, depth
+        else:
+            for row in range(len(newBoard)):
+                for col in range(len(newBoard[0])):
+                    if newBoard[row][col] == None:
+                        newBoard = copy.deepcopy(board)
+                        newBoard[row][col] = player
+                        winner,depth = miniFind2(newBoard,(not player),depth+1)
+                        winners.append(winner)
+                        depths.append(depth)
+            if winners.count(False) > 0:
+                i = winners.index(False)
+                return False, depths[i]
+            elif winners.count(None) > 0:
+                i = winners.index(None)
+                return None, depths[i]
+            else:
+                i = winners.index(True)
+                return True, depths[i]
 
 def miniMax2(app):
     if app.numBigMoves == 1:
         if app.currBigPos[0] == 1 and app.currBigPos[1] == 1:
-            playSquare(app, 0, 0)
+            return (0,0)
         elif not (app.currBigPos[0] == 1 or app.currBigPos[1] == 1):
-            playSquare(app, 1, 1)
+            return (1,1)
         elif app.currBigPos[0] == 1 ^ app.currBigPos[1] == 1:
-            playSquare(app, 2-app.currBigPos[0], 2-app.currBigPos[1])
+            return (2-app.currBigPos[0], 2-app.currBigPos[1])
     else:
-        scoreDict = {}
-        for row in len(app.bigWinners):
-            for col in len(app.bigWinners):
-                miniFind2(app.bigWinners,app.currPlayer,scoreDict)
-    pass
-
-def getOppPos2(pos, index=0):
-    pos = list(pos)
-    output = []
-    if index == len(pos):
-        return []
-    else:
-        output += getOppPos3(pos, index+1)
-        if pos[index]%2 == 0:
-            newPos = copy.copy(pos)
-            newPos[index] = abs(2-pos[index])
-            output += [newPos]
-            output += getOppPos3(newPos, index+1)
-        return output
+        print("MINIMAX RAN")
+        winners = []
+        depths = []
+        positions = []
+        minDepth = 20
+        print(app.bigWinners)
+        for row in range(len(app.bigWinners)):
+            for col in range(len(app.bigWinners[0])):
+                if app.bigWinners[row][col] == None:
+                    inList = copy.deepcopy(app.bigWinners)
+                    winner, depth = miniFind2(inList,app.currPlayer)
+                    print((row,col), winner)
+                    winners.append(winner)
+                    positions.append((row,col))
+        if winners.count(False) > 0:
+            i = winners.index(False)
+            return positions[i]
+        elif winners.count(None) > 0:
+            i = winners.index(None)
+            print(positions[i])
+            return positions[i]
 
 def switchPlayer2(app):
     player, pos = checkWin2(app.bigWinners)
@@ -159,7 +175,7 @@ def checkWin2(board):
     for pos in winPoint:
         if board[pos[0]][pos[1]] != None:
             player = board[pos[0]][pos[1]]
-            for oppPos in getOppPos2(pos):
+            for oppPos in getOppPos(pos):
                 if player == board[oppPos[0]][oppPos[1]]:
                     for i in range(len(midPos)):
                         midPos[i] = int((pos[i] + oppPos[i]) / 2)
@@ -168,6 +184,7 @@ def checkWin2(board):
     return None, None
 
 def playSquare(app, row, col):
+    print("I switched")
     if app.bigWinners[row][col] == None:
         app.currBigPos = [row, col]
         board = copy.copy(app.bigWinners)
@@ -304,18 +321,18 @@ def playPiece3(app, pos):
 def miniMax3(app):
     pass
 
-def getOppPos3(pos, index=0):
+def getOppPos(pos, index=0):
     pos = list(pos)
     output = []
     if index == len(pos):
         return []
     else:
-        output += getOppPos3(pos, index+1)
+        output += getOppPos(pos, index+1)
         if pos[index]%2 == 0:
             newPos = copy.copy(pos)
             newPos[index] = abs(2-pos[index])
             output += [newPos]
-            output += getOppPos3(newPos, index+1)
+            output += getOppPos(newPos, index+1)
         return output
 
 def checkWin3(app):
@@ -326,7 +343,7 @@ def checkWin3(app):
     for pos in winPoint:
         player = app.board[pos[0]][pos[1]][pos[2]]
         if player != None:
-            for oppPos in getOppPos3(pos):
+            for oppPos in getOppPos(pos):
                 if player == app.board[oppPos[0]][oppPos[1]][oppPos[2]]:
                     for i in range(len(midPos)):
                         midPos[i] = int((pos[i] + oppPos[i]) / 2)
