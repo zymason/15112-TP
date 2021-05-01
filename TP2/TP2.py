@@ -29,6 +29,8 @@ def cubeDims(app, size):
 def initSquare(app):
     col = [LargeBoard(None,None), LargeBoard(None,None), LargeBoard(None,None)]
     app.bigBoard = [col[:], col[:], col[:]]
+    col = [None, None, None]
+    app.bigWinners = [col[:], col[:], col[:]]
     app.currBigPlayer = True   # True is P1, False is P2/AI
     app.bigXCtr = app.width * 3/4
     app.bigYCtr = app.height/2
@@ -60,13 +62,56 @@ def start_redrawAll(app, canvas):
     canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
             font='Arial 60 bold',fill='#fff')
 
+def pieces2(board, opponent):
+    dPos = [-1,0,1]
+    for row in range(len(board)):
+        for col in range(len(row)):
+            for dRow in dPos:
+                if not (0 <= row+2*dRow <= 2):
+                    break
+                for dCol in dPos:
+                    if not (0 < row+2*dCol <= 2):
+                        break
+                    count = 0
+                    pos = [[row,col],[row+dRow,col+dCol],[row+2*dRow,col+2*dCol]]
+                    for i in [0,1,2]:
+                        piece = board[row+i*dRow][col+i*dCol].winner
+                        if piece == opponent:
+                            count += 1
+                            pos.pop(i)
+                        elif piece == (not opponent):
+                            break
+                    if count == 2:
+                        return pos[0]
+    return None
+
+def playable(board):
+    for row in newBoard:
+        for item in row:
+            if item == None:
+                return True
+    return False
+
+
 def miniFind2(board,player,depth=0):
     newBoard = copy.copy(board)
     scoreDict = {}
-    for row in range(len(newBoard)):
-        for col in range(len(row)):
-            if newBoard[row][col] == None:
-                miniFind2(board,player,depth+1)
+    imperativePos = pieces2(newBoard, (not player))
+    winner = checkWin2(newBoard)
+    spotLeft = playable(board)
+    if winner != None:
+        return winner, depth
+    elif not spotLeft:
+        return None, depth
+    else:
+        for row in range(len(newBoard)):
+            for col in range(len(row)):
+                if newBoard[row][col] == None:
+                    newerBoard copy.copy(newBoard)
+                    newerBoard[row][col] = player
+                    winner,depth = miniFind2(newerBoard,(not player),scoreDict,
+                            depth+1)
+                    
 
 def miniMax2(app):
     if app.numBigMoves == 1:
@@ -77,7 +122,10 @@ def miniMax2(app):
         elif app.currBigPos[0] == 1 ^ app.currBigPos[1] == 1:
             playSquare(app, 2-app.currBigPos[0], 2-app.currBigPos[1])
     else:
-        miniFind2(app.board,app.currPlayer)
+        scoreDict = {}
+        for row in len(app.bigWinners):
+            for col in len(app.bigWinners):
+                miniFind2(app.bigWinners,app.currPlayer,scoreDict)
     pass
 
 def getOppPos2(pos, index=0):
@@ -95,7 +143,7 @@ def getOppPos2(pos, index=0):
         return output
 
 def switchPlayer2(app):
-    player, pos = checkWin2(app)
+    player, pos = checkWin2(app.bigWinners)
     if player != None:
         app.winnerBig = player
         app.currBigPlayer = None
@@ -103,27 +151,26 @@ def switchPlayer2(app):
         app.bigGameOver = True
     else:
         app.currBigPlayer = not app.currBigPlayer
+    app.mode = 'square'
 
 def checkWin2(board):
-    # print(board)
     midPos = [0,0]
     winPoint = {(0,0), (1,0), (2,0), (0,1), (2,2)}
     for pos in winPoint:
-        if isinstance(board[pos[0]][pos[1]], LargeBoard):
-            if board[pos[0]][pos[1]].winner != None:
-                player = board[pos[0]][pos[1]].winner
-                for oppPos in getOppPos2(pos):
-                    if player == board[oppPos[0]][oppPos[1]].winner:
-                        for i in range(len(midPos)):
-                            midPos[i] = int((pos[i] + oppPos[i]) / 2)
-                        if board[midPos[0]][midPos[1]].winner == player:
-                            return player, [pos, midPos, oppPos]
+        if board[pos[0]][pos[1]] != None:
+            player = board[pos[0]][pos[1]]
+            for oppPos in getOppPos2(pos):
+                if player == board[oppPos[0]][oppPos[1]]:
+                    for i in range(len(midPos)):
+                        midPos[i] = int((pos[i] + oppPos[i]) / 2)
+                    if board[midPos[0]][midPos[1]] == player:
+                        return player, [pos, midPos, oppPos]
     return None, None
 
 def playSquare(app, row, col):
-    if app.bigBoard[row][col].winner == None:
+    if app.bigWinners[row][col] == None:
         app.currBigPos = [row, col]
-        board = copy.copy(app.bigBoard)
+        board = copy.copy(app.bigWinners)
         checkWin2(board)
         app.numBigMoves += 1
         initCube(app)
@@ -140,8 +187,8 @@ def square_mousePressed(app,event):
             col = int((event.x-app.bigXCtr+app.bigOffA)/(app.bigOffB*2))
             playSquare(app, row, col)
     elif app.currBigPlayer == False:
-        miniMax2(app)
-        playSquare(app, row, col)
+        pos = miniMax2(app)
+        playSquare(app, pos[0], pos[1])
     pass
 
 def square_keyPressed(app, event):
@@ -173,9 +220,9 @@ def drawLargeGrid(app, canvas):
 
 def drawBigPieces(app, canvas):
     dPos = app.bigOffA * 2/3
-    for row in range(len(app.bigBoard)):
-        for col in range(len(app.bigBoard[0])):
-            player = app.bigBoard[row][col].winner
+    for row in range(len(app.bigWinners)):
+        for col in range(len(app.bigWinners[0])):
+            player = app.bigWinners[row][col]
             if player != None:
                 x = app.bigXCtr + ((col-1) * dPos)
                 y = app.bigYCtr + ((row-1) * dPos)
@@ -244,7 +291,6 @@ def initCube(app):
     app.smallMsg = None
     app.timeInit = time.time()
     app.theta = 0
-    app.numMoves = 0
     app.winPos = []
     checkWin3(app)
     app.mode = "cube"
@@ -253,7 +299,6 @@ def playPiece3(app, pos):
     if app.board[pos[0]][pos[1]][pos[2]] == None:
         app.board[pos[0]][pos[1]][pos[2]] = app.currPlayer
         app.currPlayer = not app.currPlayer
-        app.numMoves += 1
     pass
 
 def miniMax3(app):
@@ -278,10 +323,6 @@ def checkWin3(app):
     winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0), (0,0,2),
                 (1,0,0), (1,0,1), (1,1,0), (1,2,0), (1,2,2),
                 (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
-    if app.numMoves == 27:
-        app.winnerSmall = None
-        app.smallGameOver = True
-        return
     for pos in winPoint:
         player = app.board[pos[0]][pos[1]][pos[2]]
         if player != None:
@@ -329,10 +370,8 @@ def cube_keyPressed(app, event):
     elif event.key == 'e' and app.smallGameOver:
         app.bigBoard[app.currBigPos[0]][app.currBigPos[1]] = LargeBoard(
                     copy.copy(app.board), app.winnerSmall)
-        app.currBigPlayer = not app.currBigPlayer
-        checkWin2(app.bigBoard)
-        # print(app.bigBoard)
-        app.mode = 'square'
+        app.bigWinners[app.currBigPos[0]][app.currBigPos[1]] = app.winnerSmall
+        switchPlayer2(app)
     pass
 
 def cube_timerFired(app):
