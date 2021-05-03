@@ -14,13 +14,22 @@ class LargeBoard(object):
     def __init__(self, board, winner):
         self.board = board
 
+def changeAngle(app, dRho=0):
+    if -m.pi*92/180 < app.angle+dRho < m.pi*92/180:
+        app.angle += dRho
+        app.cos = m.cos(app.angle)
+        app.sin = m.sin(app.angle)
+
 # Starts whole app
 def appStarted(app):
     app.timerDelay = 30
-    app.cos30 = m.cos(m.pi/6)
+    app.angle = m.pi*36/180
+    app.cos = m.cos(m.pi/6)
+    changeAngle(app)
     app.mode = "start"
     # initSquare(app)
     # initCube(app)
+    # app.board = [[[True]*3]*3]*3
 
 # Sets number of players
 def start_mousePressed(app, event):
@@ -495,16 +504,18 @@ def cube_mousePressed(app, event):
 def cube_keyPressed(app, event):
     if event.key == "r":
         initCube(app)
-    elif event.key == "Up":
-        # app.theta += m.pi/360
+    elif event.key == "Right":
         app.dTheta += m.pi/360
         if app.dTheta > m.pi/36:
             app.dTheta = m.pi/36
-    elif event.key == "Down":
-        # app.theta -= m.pi/360
+    elif event.key == "Left":
         app.dTheta -= m.pi/360
         if app.dTheta < -m.pi/36:
             app.dTheta = -m.pi/36
+    elif event.key == "Up":
+        changeAngle(app, m.pi/90)
+    elif event.key == "Down":
+        changeAngle(app, -m.pi/90)
     elif event.key == 'q':
         appStarted(app)
     elif event.key == 'e' and app.smallGameOver:
@@ -512,6 +523,7 @@ def cube_keyPressed(app, event):
                     copy.copy(app.board), app.winnerSmall)
         app.bigWinners[app.currBigPos[0]][app.currBigPos[1]] = app.winnerSmall
         switchPlayer2(app)
+    print(app.angle)
     pass
 
 def switchOrder(app):
@@ -631,22 +643,22 @@ def drawPieces(app, canvas):
     pass
 
 def drawJack(app, canvas, xPos, yPos, grid):
-    z = -app.cubeSide/3
-    r = app.cubeSide/10
+    z = -app.cubeSide/3*(2**0.5)
+    r = app.cubeSide/8
     dx = app.cubeZ[1]
     dy = app.cubeZ[0]
-    xCtr = app.cubeCtr[0] - 2*xPos*dy*app.cos30 + 2*yPos*dx*app.cos30
-    yCtr = app.cubeCtr[1] - z*grid + xPos*dx + yPos*dy
+    xCtr = app.cubeCtr[0] - 2*xPos*dy + 2*yPos*dx
+    yCtr = app.cubeCtr[1] - z*grid*app.cos + xPos*dx*app.sin*2 + yPos*dy*app.sin*2
     canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="red")
     pass
 
 def drawDot(app, canvas, xPos, yPos, grid):
-    z = -app.cubeSide/3
-    r = app.cubeSide/10
+    z = -app.cubeSide/3*(2**0.5)
+    r = app.cubeSide/8
     dx = app.cubeZ[1]
     dy = app.cubeZ[0]
-    xCtr = app.cubeCtr[0] - 2*xPos*dy*app.cos30 + 2*yPos*dx*app.cos30
-    yCtr = app.cubeCtr[1] - z*grid + xPos*dx + yPos*dy
+    xCtr = app.cubeCtr[0] - 2*xPos*dy + 2*yPos*dx
+    yCtr = app.cubeCtr[1] - z*grid*app.cos + xPos*dx*app.sin*2 + yPos*dy*app.sin*2
     canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="blue")
     pass
 
@@ -667,23 +679,23 @@ def drawCubeLines(app, canvas, i):
             [-app.cubeB[0], app.cubeB[0], -app.cubeB[1], app.cubeB[1]]]
     yList = [[app.cubeA[1], -app.cubeA[1], -app.cubeA[0], app.cubeA[0]],
             [-app.cubeB[1], app.cubeB[1], app.cubeB[0], -app.cubeB[0]]]
-    z = app.cubeA[2]
+    z = app.cubeSide/6*(2**0.5)
     for j in range(len(xList[1])):
-        x0 = app.cubeCtr[0] - xList[0][j]*app.cos30 + yList[0][j]*app.cos30
-        y0 = app.cubeCtr[1] - z*i + xList[0][j]/2 + yList[0][j]/2
-        x1 = app.cubeCtr[0] - xList[1][j]*app.cos30 + yList[1][j]*app.cos30
-        y1 = app.cubeCtr[1] - z*i + xList[1][j]/2 + yList[1][j]/2
+        x0 = app.cubeCtr[0] - xList[0][j] + yList[0][j]
+        y0 = app.cubeCtr[1] - z*i*app.cos + xList[0][j]*app.sin + yList[0][j]*app.sin
+        x1 = app.cubeCtr[0] - xList[1][j] + yList[1][j]
+        y1 = app.cubeCtr[1] - z*i*app.cos + xList[1][j]*app.sin + yList[1][j]*app.sin
         canvas.create_line(x0,y0,x1,y1,width=2)
     pass
 
 # Draws vertical wireframe lines for rotating cube
 def drawVertLines(app, canvas, xList, yList, i, grid):
-    z1 = app.cubeSide*grid/3 + app.cubeSide/6
-    z2 = app.cubeSide*grid/3 - app.cubeSide/6
-    x0 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
-    y0 = app.cubeCtr[1] - z1 + xList[i]/2 + yList[i]/2
-    x1 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
-    y1 = app.cubeCtr[1] - z2 + xList[i]/2 + yList[i]/2
+    z1 = (app.cubeSide*grid/3 + app.cubeSide/6)*(2**0.5)
+    z2 = (app.cubeSide*grid/3 - app.cubeSide/6)*(2**0.5)
+    x0 = app.cubeCtr[0] - xList[i] + yList[i]
+    y0 = app.cubeCtr[1] - z1*app.cos + xList[i]*app.sin + yList[i]*app.sin
+    x1 = app.cubeCtr[0] - xList[i] + yList[i]
+    y1 = app.cubeCtr[1] - z2*app.cos + xList[i]*app.sin + yList[i]*app.sin
     canvas.create_line(x0,y0,x1,y1,width=2)
 
 # Draws current player/winner
@@ -721,11 +733,18 @@ def cube_redrawAll(app, canvas):
         drawSingleGrid(app, canvas, i)
     drawPieces(app, canvas)
     drawCurrPlayerMsg(app, canvas)
-    for grid in range(2*len(app.board)-2,-1,-1):
-        if grid%2 == 0:
-            drawPieceLayer(app, canvas, grid//2)
-        else:
-            drawCubeLines(app, canvas, 2-grid)
+    if app.angle >= 0:
+        for grid in range(2*len(app.board)-2,-1,-1):
+            if grid%2 == 0:
+                drawPieceLayer(app, canvas, grid//2)
+            else:
+                drawCubeLines(app, canvas, 2-grid)
+    else:
+        for grid in range(2*len(app.board)-1):
+            if grid%2 == 0:
+                drawPieceLayer(app, canvas, grid//2)
+            else:
+                drawCubeLines(app, canvas, 2-grid)
     pass
 
 runApp(width=1000,height=700)
