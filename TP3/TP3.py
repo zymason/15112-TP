@@ -13,15 +13,14 @@ import copy
 class LargeBoard(object):
     def __init__(self, board, winner):
         self.board = board
-        self.winner = winner
 
 # Starts whole app
 def appStarted(app):
     app.timerDelay = 30
     app.cos30 = m.cos(m.pi/6)
     app.mode = "start"
-    initSquare(app)
-    initCube(app)
+    # initSquare(app)
+    # initCube(app)
 
 # Sets number of players
 def start_mousePressed(app, event):
@@ -340,7 +339,6 @@ def initCube(app):
     cubeDims(app, 300)      # Set Cube Drawing variables
     app.paused = False
     app.smallGameOver = False
-    app.smallGOTime = False
     app.smallMsg = None
     app.timeInit = time.time()
     app.theta = 0
@@ -348,8 +346,8 @@ def initCube(app):
     app.numSmallMoves = 0
     app.pieceOrder = [[(0,0)],[(1,0),(0,1)],[(2,0),(1,1),(0,2)],[(2,1),(1,2)],
                     [(2,2)]]
-    app.xDims = [app.cubeZ[0], -app.cubeZ[0], app.cubeZ[1], -app.cubeZ[1]]
-    app.yDims = [app.cubeZ[1], -app.cubeZ[1], -app.cubeZ[0], app.cubeZ[0]]
+    app.xDims = [-app.cubeZ[0], app.cubeZ[1], -app.cubeZ[1], app.cubeZ[0]]
+    app.yDims = [-app.cubeZ[1], -app.cubeZ[0], app.cubeZ[0], app.cubeZ[1]]
     checkWin3(app)
     app.mode = "cube"
 
@@ -457,7 +455,7 @@ def checkWin3(app):
     midPos = [0,0,0]
     winPoint = {(0,0,0), (0,0,1), (0,1,0), (0,1,1), (0,2,0), (0,0,2),
                 (1,0,0), (1,0,1), (1,1,0), (1,2,0), (1,2,2),
-                (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
+                (2,0,0), (2,2,2), (2,0,2), (2,1,2), (2,2,1)}
     for pos in winPoint:
         player = app.board[pos[0]][pos[1]][pos[2]]
         if player != None:
@@ -518,9 +516,29 @@ def cube_keyPressed(app, event):
 
 def switchOrder(app):
     check = app.theta + m.pi/4
-    if (((check-app.dTheta) % (m.pi/2)) >= 0) ^ ((check % (m.pi/2)) >= 0):
-        pass
-
+    if check%(m.pi/2) - abs(app.dTheta) <= 0:
+        if app.dTheta > 0:
+            newOrder = copy.deepcopy(app.pieceOrder)
+            newOrder[0][0] = copy.copy(app.pieceOrder[2][2])
+            newOrder[2][0] = copy.copy(app.pieceOrder[0][0])
+            newOrder[4][0] = copy.copy(app.pieceOrder[2][0])
+            newOrder[2][2] = copy.copy(app.pieceOrder[4][0])
+            newOrder[1][0] = copy.copy(app.pieceOrder[1][1])
+            newOrder[3][0] = copy.copy(app.pieceOrder[1][0])
+            newOrder[3][1] = copy.copy(app.pieceOrder[3][0])
+            newOrder[1][1] = copy.copy(app.pieceOrder[3][1])
+        elif app.dTheta < 0:
+            newOrder = copy.deepcopy(app.pieceOrder)
+            newOrder[0][0] = copy.copy(app.pieceOrder[2][0])
+            newOrder[2][0] = copy.copy(app.pieceOrder[4][0])
+            newOrder[4][0] = copy.copy(app.pieceOrder[2][2])
+            newOrder[2][2] = copy.copy(app.pieceOrder[0][0])
+            newOrder[1][0] = copy.copy(app.pieceOrder[3][0])
+            newOrder[3][0] = copy.copy(app.pieceOrder[3][1])
+            newOrder[3][1] = copy.copy(app.pieceOrder[1][1])
+            newOrder[1][1] = copy.copy(app.pieceOrder[1][0])
+        app.pieceOrder = copy.deepcopy(newOrder)
+    pass
 
 # Prevents movement/play before given time, updates rotating cube coordinates
 def cube_timerFired(app):
@@ -536,14 +554,28 @@ def cube_timerFired(app):
         app.cubeB[1] = x2*m.sin(app.theta) + y2*m.cos(app.theta)
         app.cubeZ[0] = x3*m.cos(app.theta) - y3*m.sin(app.theta)
         app.cubeZ[1] = x3*m.sin(app.theta) + y3*m.cos(app.theta)
-        app.xDims = [app.cubeZ[0], app.cubeZ[1], -app.cubeZ[0], -app.cubeZ[1]]
-        app.yDims = [app.cubeZ[1], -app.cubeZ[0], -app.cubeZ[1], app.cubeZ[0]]
-        app.xDims = [app.cubeZ[0], -app.cubeZ[0], app.cubeZ[1], -app.cubeZ[1]]
-        app.yDims = [app.cubeZ[1], -app.cubeZ[1], -app.cubeZ[0], app.cubeZ[0]]
+        app.xDims = [-app.cubeZ[0], app.cubeZ[1], -app.cubeZ[1], app.cubeZ[0]]
+        app.yDims = [-app.cubeZ[1], -app.cubeZ[0], app.cubeZ[0], app.cubeZ[1]]
         app.theta += app.dTheta
         app.theta %= 2*m.pi
-        
-    switchOrder(app)
+        newX = [None, None, None, None]
+        newY = [None, None, None, None]
+        for i in range(len(app.xDims)):
+            if app.xDims[i] >= 0 and app.yDims[i] >= 0:
+                newX[3] = app.xDims[i]
+                newY[3] = app.yDims[i]
+            elif app.xDims[i] < 0 and app.yDims[i] < 0:
+                newX[0] = app.xDims[i]
+                newY[0] = app.yDims[i]
+            elif app.xDims[i] >= 0 and app.yDims[i] < 0:
+                newX[1] = app.xDims[i]
+                newY[1] = app.yDims[i]
+            elif app.xDims[i] < 0 and app.yDims[i] >= 0:
+                newX[2] = app.xDims[i]
+                newY[2] = app.yDims[i]
+        app.xDims = copy.copy(newX)
+        app.yDims = copy.copy(newY)
+        switchOrder(app)
     pass
 
 # Draws one 2D grid of 3 total
@@ -603,24 +635,30 @@ def drawJack(app, canvas, xPos, yPos, grid):
     r = app.cubeSide/10
     dx = app.cubeZ[1]
     dy = app.cubeZ[0]
-    if xPos == yPos == grid == -1:
-        color = "red"
-    else:
-        color = "blue"
-
     xCtr = app.cubeCtr[0] - 2*xPos*dy*app.cos30 + 2*yPos*dx*app.cos30
     yCtr = app.cubeCtr[1] - z*grid + xPos*dx + yPos*dy
-    canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill=color)
+    canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="red")
     pass
 
-def drawDot(app, canvas, xCtr, yCtr):
+def drawDot(app, canvas, xPos, yPos, grid):
+    z = -app.cubeSide/3
+    r = app.cubeSide/10
+    dx = app.cubeZ[1]
+    dy = app.cubeZ[0]
+    xCtr = app.cubeCtr[0] - 2*xPos*dy*app.cos30 + 2*yPos*dx*app.cos30
+    yCtr = app.cubeCtr[1] - z*grid + xPos*dx + yPos*dy
+    canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="blue")
     pass
 
 def drawPieceLayer(app, canvas, grid):
-    for order in app.pieceOrder:
-        for pos in order:
-            drawJack(app, canvas, pos[0]-1, pos[1]-1, 1-grid)
-        drawVertLines(app, canvas, app.xDims, app.yDims)
+    for order in range(len(app.pieceOrder)):
+        for pos in app.pieceOrder[order]:
+            if app.board[grid][pos[0]][pos[1]]:
+                drawDot(app, canvas, pos[0]-1, pos[1]-1, grid-1)
+            elif app.board[grid][pos[0]][pos[1]] == False:
+                drawJack(app, canvas, pos[0]-1, pos[1]-1, grid-1)
+        if order < 4:
+            drawVertLines(app, canvas, app.xDims, app.yDims, order, 1-grid)
     pass
 
 # Draws horizontal wireframe lines for rotating cube
@@ -630,7 +668,6 @@ def drawCubeLines(app, canvas, i):
     yList = [[app.cubeA[1], -app.cubeA[1], -app.cubeA[0], app.cubeA[0]],
             [-app.cubeB[1], app.cubeB[1], app.cubeB[0], -app.cubeB[0]]]
     z = app.cubeA[2]
-
     for j in range(len(xList[1])):
         x0 = app.cubeCtr[0] - xList[0][j]*app.cos30 + yList[0][j]*app.cos30
         y0 = app.cubeCtr[1] - z*i + xList[0][j]/2 + yList[0][j]/2
@@ -640,14 +677,14 @@ def drawCubeLines(app, canvas, i):
     pass
 
 # Draws vertical wireframe lines for rotating cube
-def drawVertLines(app, canvas, xList, yList):
-    z = app.cubeZ[2]
-    for i in range(len(xList)):
-        x0 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
-        y0 = app.cubeCtr[1] - z + xList[i]/2 + yList[i]/2
-        x1 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
-        y1 = app.cubeCtr[1] + z + xList[i]/2 + yList[i]/2
-        canvas.create_line(x0,y0,x1,y1,width=2)
+def drawVertLines(app, canvas, xList, yList, i, grid):
+    z1 = app.cubeSide*grid/3 + app.cubeSide/6
+    z2 = app.cubeSide*grid/3 - app.cubeSide/6
+    x0 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
+    y0 = app.cubeCtr[1] - z1 + xList[i]/2 + yList[i]/2
+    x1 = app.cubeCtr[0] - xList[i]*app.cos30 + yList[i]*app.cos30
+    y1 = app.cubeCtr[1] - z2 + xList[i]/2 + yList[i]/2
+    canvas.create_line(x0,y0,x1,y1,width=2)
 
 # Draws current player/winner
 def drawCurrPlayerMsg(app, canvas):
@@ -684,11 +721,11 @@ def cube_redrawAll(app, canvas):
         drawSingleGrid(app, canvas, i)
     drawPieces(app, canvas)
     drawCurrPlayerMsg(app, canvas)
-    for grid in range(2*len(app.board)-1):
+    for grid in range(2*len(app.board)-2,-1,-1):
         if grid%2 == 0:
             drawPieceLayer(app, canvas, grid//2)
         else:
-            drawCubeLines(app, canvas, grid-2)
+            drawCubeLines(app, canvas, 2-grid)
     pass
 
 runApp(width=1000,height=700)
