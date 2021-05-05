@@ -14,6 +14,7 @@ class LargeBoard(object):
     def __init__(self, board, winner):
         self.board = board
 
+#
 def changeAngle(app, dRho=0):
     if -m.pi*92/180 < app.angle+dRho < m.pi*92/180:
         app.angle += dRho
@@ -31,6 +32,7 @@ def appStarted(app):
     app.cos = m.cos(m.pi/6)
     changeAngle(app)
     app.mode = "start"
+    app.modeFrom = None
 
 # Sets number of players
 def start_mousePressed(app, event):
@@ -39,8 +41,8 @@ def start_mousePressed(app, event):
             app.numPlayers = 1
         else:
             app.numPlayers = 2
-        initSquare(app)
-
+        initRules(app)
+        
 # Draws two halves
 def start_redrawAll(app, canvas):
     canvas.create_rectangle(0,app.height/7,app.width/2,app.height,
@@ -53,6 +55,46 @@ def start_redrawAll(app, canvas):
             font='Arial 60 bold')
     canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
             font='Arial 60 bold',fill='#fff')
+
+def initRules(app):
+    app.modeFrom = app.mode
+    app.rules = ["To view the rules at any point in the game, simply press 'm'",
+            "If you view the rules mid-game, press 'm' to go back to the game",
+            "In this game, your goal is to win 3-in-a-row on the 3x3 grid by playing sub-games",
+            "Each sub-game is a 3x3x3 game (3D), where you play pieces against the opponent",
+            "To select where you want to play the 3D game when it's your turn, simply click on the desired spot",
+            "For piece placement, click on the desired spot on the right, keeping in mind that wins can occur in any dimension",
+            "To win a 3x3x3 game, you need 3-in-a-row in any direction (horizontal, vertical, or upwards)",
+            "In the 3D grid, an auto-rotating cube visualization is provided and it's orientation can be changed",
+            "To rotate the cube up/down, use the Up/Down arrow keys",
+            "To change the autorotation speed/direction, use the Left/Right arrow keys",
+            "When on the main 2D grid, you can view the 3D visual of a finished sub-game by clicking on it's grid position",
+            "This view has the same interaction features as the visual within a sub-game"
+            "To hide this view, simply press 'x'",
+            "For Single-Player, you need to press 's' to have the AI select a sub-game location",
+            "Once a sub-game is finished, press 'e' to exit and return to the primary game board",
+            "All controls except for 3D cube interactions are prompted beneath the current player",
+            "At any time, press 'q' to restart the game",
+            "If you are ready, press 's' to start the game! Good Luck!"]
+    if app.modeFrom != "start":
+        app.rules = app.rules[0:-1]
+    app.mode = 'rules'
+
+def rules_keyPressed(app, event):
+    if event.key == "s" and app.modeFrom == "start":
+        initSquare(app)
+    elif event.key == 'm' and app.modeFrom != None:
+        app.mode = app.modeFrom
+        app.modeFrom = None
+    elif event.key == 'q':
+        appStarted(app)
+
+def rules_redrawAll(app, canvas):
+    canvas.create_text(app.width/2,app.height/10,text="Rules of the Game:",
+            fill='black',font='Arial 40 bold')
+    for i in range(len(app.rules)):
+        canvas.create_text(app.width/10,app.height/5+i*24,anchor='w',
+                text='- '+app.rules[i],fill='black',font='Arial 16')
 
 # Initializes all variables for the large 2D grid, only called once
 def initSquare(app):
@@ -285,6 +327,8 @@ def square_keyPressed(app, event):
         changeAngle(app, m.pi/90)
     elif event.key == "Down":
         changeAngle(app, -m.pi/90)
+    elif event.key == 'm':
+        initRules(app)
     pass
 
 def square_timerFired(app):
@@ -346,9 +390,6 @@ def drawCurrPlayerMsg2(app, canvas):
             text = "Player 2: Your Turn"
         else:
             text = "It's Player 2's Turn"
-    else:
-        text=None
-        fill="black"
     canvas.create_text(xCtr,yCtr+30,text=app.bigMsg,
         font="Arial 15")
     canvas.create_text(xCtr,yCtr,text=text,font="Arial 30 bold",
@@ -587,6 +628,8 @@ def cube_keyPressed(app, event):
         app.bigWinners[app.currBigPos[0]][app.currBigPos[1]] = app.winnerSmall
         switchPlayer2(app)
         cubeDims(app, 300)
+    elif event.key == 'm':
+        initRules(app)
     pass
 
 def switchOrder(app):
