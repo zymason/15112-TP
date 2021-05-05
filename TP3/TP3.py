@@ -44,9 +44,9 @@ def start_mousePressed(app, event):
 # Draws two halves
 def start_redrawAll(app, canvas):
     canvas.create_rectangle(0,app.height/7,app.width/2,app.height,
-            width=0,fill='#a00')
+            width=0,fill='#d00')
     canvas.create_rectangle(app.width,app.height/7,app.width/2,app.height,
-            width=0,fill='#00a')
+            width=0,fill='#00d')
     canvas.create_text(app.width/2,50,
             text="Welcome to Ultimate 3D Tic Tac Toe!",font='Arial 50 bold')
     canvas.create_text(app.width/4,app.width/3,text="Single Player",
@@ -208,8 +208,8 @@ def switchPlayer2(app):
             app.bigMsg = "Press s for the next game..."
         else:
             app.bigMsg = None
-    app.board = None
-    app.mode = 'square'
+        app.board = None
+        app.mode = 'square'
 
 # Checks for 2D win, returns player and winning position
 def checkWin2(board):
@@ -324,10 +324,10 @@ def drawBigPieces(app, canvas):
                 y = app.bigYCtr + ((row-1) * dPos)
                 if player:
                     text = 'O'
-                    fill = '#00a'
+                    fill = '#00d'
                 elif player == False:
                     text = 'X'
-                    fill = '#a00'
+                    fill = '#d00'
                 canvas.create_text(x,y,text=text,fill=fill,
                         font='Arial 40 bold')
     pass
@@ -339,16 +339,16 @@ def drawCurrPlayerMsg2(app, canvas):
     yCtr = app.height/20
     if app.currBigPlayer:
         text = "Player 1: Your Turn"
-        fill = "#00a"
+        fill = "#00d"
     elif app.currBigPlayer == False:
-        fill = "#a00"
+        fill = "#d00"
         if app.numPlayers == 2:
             text = "Player 2: Your Turn"
         else:
             text = "It's Player 2's Turn"
     else:
-        text = "It's a Tie!"
-        fill = "#000"
+        text=None
+        fill="black"
     canvas.create_text(xCtr,yCtr+30,text=app.bigMsg,
         font="Arial 15")
     canvas.create_text(xCtr,yCtr,text=text,font="Arial 30 bold",
@@ -449,32 +449,31 @@ def pieces3Help(board, opponent, grid, row, col):
                 if not (0 <= col+2*dCol <= 2) or (dRow == dCol == 0):
                     continue
                 count = 0
-                pos = ([[grid,row,col],[grid+dGrid,row+dRow,col+dCol],
-                        [grid+2*dGrid,row+2*dRow,col+2*dCol]])
+                # Checks every position-direction combination
+                pos = [[grid,row,col],[grid+dGrid,row+dRow,col+dCol],[grid+2*dGrid,row+2*dRow,col+2*dCol]]
                 i = 0
                 while i < len(pos):
                     piece = board[pos[i][0]][pos[i][1]][pos[i][2]]
                     if piece == opponent:
                         count += 1
-                        pos.remove(pos[i])
+                        pos.remove(pos[i])  # Remove pos if piece is there
                         continue
+                    # Break if there is opponent piece in the 3-in-a-row
                     elif piece == (not opponent) and opponent != None:
                         break
                     i += 1
-                if (count == 2 and 
-                        board[pos[0][0]][pos[0][1]][pos[0][2]] == None):
+                if count == 2 and board[pos[0][0]][pos[0][1]][pos[0][2]] == None:
                     return pos[0]
     return None
 
 # Finds if 2-in-a-row on 3D grid, returns position of empty space or None
 def pieces3(board, opponent):
+    dPos = [-1,0,1]
     for grid in range(len(board)):
         for row in range(len(board[0])):
             for col in range(len(board[0][0])):
                 output = pieces3Help(board, opponent, grid, row, col)
-                if output == None:
-                    continue
-                else:
+                if output != None:
                     return output
     return None
 
@@ -700,10 +699,10 @@ def drawPieces(app, canvas):
                     y = app.yCtrTri[grid] + ((row-1) * dPos)
                     if player:
                         text = 'O'
-                        fill = '#00a'
+                        fill = '#00d'
                     elif not player:
                         text = 'X'
-                        fill = '#a00'
+                        fill = '#d00'
                     canvas.create_text(x,y,text=text,fill=fill,
                             font='Arial 20 bold')
     if app.winnerSmall != None:
@@ -776,18 +775,18 @@ def drawCurrPlayerMsg(app, canvas):
     yCtr = app.height/20
     if app.currPlayer:
         text = "Player 1: Your Turn"
-        fill = "#00a"
+        fill = "#00d"
         canvas.create_text(xCtr,yCtr+r,text="O",fill=fill,font="Arial 40 bold")
     elif app.currPlayer == False:
         text = "Player 2: Your Turn"
-        fill = "#a00"
+        fill = "#d00"
         canvas.create_text(xCtr,yCtr+r,text="X",fill=fill,font="Arial 40 bold")
     elif app.winnerSmall:
         text = "Player 1 Wins!!!"
-        fill = "#00a"
+        fill = "#00d"
     elif app.winnerSmall == False:
         text = "Player 2 Wins!!!"
-        fill = "#a00"
+        fill = "#d00"
     elif app.winnerSmall == None and app.smallGameOver:
         text = "It's a Tie!"
         fill = "#000"
@@ -819,7 +818,35 @@ def cube_redrawAll(app, canvas):
                 drawCubeLines(app, canvas, 2-grid)
     pass
 
+def win_keyPressed(app, event):
+    appStarted(app)
+
 def win_redrawAll(app, canvas):
+    if app.winnerBig:
+        colorA = "#00d"
+        colorB = "#fff"
+    elif app.winnerBig == False:
+        colorA = "#d00"
+        colorB = "#000"
+    else:
+        colorA = "#fff"
+        colorB = "#000"
+        text = "Tie Game! That's quite rare!"
+    if app.numPlayers == 1:
+        if app.winnerBig == False:
+            text = "Oh no! You lost!"
+        elif app.winnerBig:
+            text = "Congrats! You Won!"
+    else:
+        if app.winnerBig == False:
+            text = "Player 2 Won! Good Job!"
+        elif app.winnerBig:
+            text = "Player 1 Won! Good Job!"
+    canvas.create_rectangle(0,0,app.width,app.height,width=0,fill=colorA)
+    canvas.create_text(app.width/2,app.height*9/20,text=text,fill=colorB,
+            font="Arial 60 bold")
+    canvas.create_text(app.width/2,app.height*9/20+50,
+            text="Press any key to play again",font="Arial 20 bold",fill=colorB)
     pass
 
 runApp(width=1000,height=700)
