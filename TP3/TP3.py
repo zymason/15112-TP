@@ -1,8 +1,7 @@
-# 15-112 Term Project
+# CMU 15-112 Term Project
 # Zachary Mason (zymason)
 # 2D strategy adapted from: https://www.rd.com/article/how-to-win-tic-tac-toe/
-# 3D strategy adapted from: 
-#       https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
+# 3D strategy adapted from: https://everything2.com/title/How+to+always+win+at+3D+Tic-Tac-Toe
 
 from cmu_112_graphics import *
 import time
@@ -14,7 +13,7 @@ class LargeBoard(object):
     def __init__(self, board, winner):
         self.board = board
 
-#
+# Changes vertical viewing angle of cube
 def changeAngle(app, dRho=0):
     if -m.pi*92/180 < app.angle+dRho < m.pi*92/180:
         app.angle += dRho
@@ -31,12 +30,14 @@ def appStarted(app):
     app.angle = m.pi*36/180
     app.cos = m.cos(m.pi/6)
     changeAngle(app)
+    app.pieceOrder = [[(0,0)],[(1,0),(0,1)],[(2,0),(1,1),(0,2)],[(2,1),(1,2)],
+                    [(2,2)]]
     app.mode = "start"
     app.modeFrom = None
 
 # Sets number of players
 def start_mousePressed(app, event):
-    if event.y > app.width/7:
+    if event.y > app.width/5:
         if event.x < app.width/2:
             app.numPlayers = 1
         else:
@@ -45,19 +46,21 @@ def start_mousePressed(app, event):
         
 # Draws two halves
 def start_redrawAll(app, canvas):
-    canvas.create_rectangle(0,app.height/7,app.width/2,app.height,
+    canvas.create_rectangle(0,app.height/5,app.width/2,app.height,
             width=0,fill='#d00')
-    canvas.create_rectangle(app.width,app.height/7,app.width/2,app.height,
+    canvas.create_rectangle(app.width,app.height/5,app.width/2,app.height,
             width=0,fill='#00d')
     canvas.create_text(app.width/2,50,
-            text="Welcome to Ultimate 3D Tic Tac Toe!",font='Arial 50 bold')
-    canvas.create_text(app.width/4,app.width/3,text="Single Player",
+            text="Ultimate 3D Tic Tac Toe",font='Arial 50 bold')
+    canvas.create_text(app.width/4,app.height/2,text="Single Player",
             font='Arial 60 bold')
-    canvas.create_text(app.width*3/4,app.width/3,text="Two Player",
+    canvas.create_text(app.width*3/4,app.height/2,text="Two Player",
             font='Arial 60 bold',fill='#fff')
+    canvas.create_text(app.width/2,100,text="By Zach Mason",font="Arial 15 bold")
 
+# Called upon starting rules page
 def initRules(app):
-    app.modeFrom = app.mode
+    app.modeFrom = app.mode     # This is used to return back to the game
     app.rules = ["To view the rules at any point in the game, simply press 'm'",
             "If you view the rules mid-game, press 'm' to go back to the game",
             "In this game, your goal is to win 3-in-a-row on the 3x3 grid by playing sub-games",
@@ -80,6 +83,7 @@ def initRules(app):
         app.rules = app.rules[0:-1]
     app.mode = 'rules'
 
+# Handles keypressed in rules mode
 def rules_keyPressed(app, event):
     if event.key == "s" and app.modeFrom == "start":
         initSquare(app)
@@ -89,6 +93,7 @@ def rules_keyPressed(app, event):
     elif event.key == 'q':
         appStarted(app)
 
+# Draws all text in rules mode
 def rules_redrawAll(app, canvas):
     canvas.create_text(app.width/2,app.height/10,text="Rules of the Game:",
             fill='black',font='Arial 40 bold')
@@ -191,7 +196,7 @@ def miniFind(board,player):
                 i = winners.index(True)
                 return True
 
-# Wrapper function for miniMax, returns position that will end up as a win/tie
+# Wrapper function for miniFind in 2D, returns positions for win/tie result
 def miniMax2(app):
     if app.numBigMoves == 1:
         # P1 Center
@@ -229,7 +234,7 @@ def miniMax2(app):
             i = winners.index(None)
             return positions[i]
 
-# Checks 2D win after cube game finished, goes back to square
+# Handles switching upon exit of a 2D game
 def switchPlayer2(app):
     player, pos = checkWin2(app.bigWinners)
     if player != None:
@@ -331,6 +336,7 @@ def square_keyPressed(app, event):
         initRules(app)
     pass
 
+# Allows for cube auto-rotation
 def square_timerFired(app):
     transformCoords(app)
 
@@ -396,6 +402,7 @@ def drawCurrPlayerMsg2(app, canvas):
             fill=fill)
     pass
 
+# Writes text for the cube's vertical orientation state
 def drawAngleMsg(app, canvas):
     canvas.create_text(app.width/10,app.height*9/10,text=app.angleMsg,
             font="Arial 12")
@@ -458,11 +465,11 @@ def initCube(app):
     app.theta = 0
     app.winPos = []
     app.numSmallMoves = 0
-    app.pieceOrder = [[(0,0)],[(1,0),(0,1)],[(2,0),(1,1),(0,2)],[(2,1),(1,2)],
-                    [(2,2)]]
     checkWin3(app)
     app.mode = "cube"
     app.angle = m.pi*36/180
+    app.pieceOrder = [[(0,0)],[(1,0),(0,1)],[(2,0),(1,1),(0,2)],[(2,1),(1,2)],
+                    [(2,2)]]
     if app.angle >= 0:
         app.angleMsg = "Viewing from top"
     else:
@@ -491,7 +498,8 @@ def pieces3Help(board, opponent, grid, row, col):
                     continue
                 count = 0
                 # Checks every position-direction combination
-                pos = [[grid,row,col],[grid+dGrid,row+dRow,col+dCol],[grid+2*dGrid,row+2*dRow,col+2*dCol]]
+                pos = [[grid,row,col],[grid+dGrid,row+dRow,col+dCol],
+                        [grid+2*dGrid,row+2*dRow,col+2*dCol]]
                 i = 0
                 while i < len(pos):
                     piece = board[pos[i][0]][pos[i][1]][pos[i][2]]
@@ -507,7 +515,7 @@ def pieces3Help(board, opponent, grid, row, col):
                     return pos[0]
     return None
 
-# Finds if 2-in-a-row on 3D grid, returns position of empty space or None
+# Checks if there are two pieces in a row for 3D, returns empty position or None
 def pieces3(board, opponent):
     dPos = [-1,0,1]
     for grid in range(len(board)):
@@ -518,7 +526,7 @@ def pieces3(board, opponent):
                     return output
     return None
 
-# 3D minimax, returns position to guarantee win. Same recursive function as 2D
+# Wrapper function for miniFind in 3D, returns positions for win/tie result
 def miniMax3(app):
     if app.board[1][1][1] == None:
         if app.numSmallMoves == 0 or app.numSmallMoves == 1:
@@ -632,6 +640,7 @@ def cube_keyPressed(app, event):
         initRules(app)
     pass
 
+# Switches the drawing order of cube based on orientation
 def switchOrder(app):
     check = app.theta + m.pi/4
     if check%(m.pi/2) - abs(app.dTheta) <= 0:
@@ -658,6 +667,7 @@ def switchOrder(app):
         app.pieceOrder = copy.deepcopy(newOrder)
     pass
 
+# Even more transformation of coordinates based on cube orientation
 def transformCoords(app):
     x1, x2 = app.cubA[0], app.cubB[0]
     y1, y2 = app.cubA[1], app.cubB[1]
@@ -755,6 +765,7 @@ def drawPieces(app, canvas):
             canvas.create_text(x,y,text='O',fill='#0a0',font='Arial 50 bold')
     pass
 
+# Draws 3D pieces for Player 2
 def drawJack(app, canvas, xPos, yPos, grid):
     z = -app.cubeSide/3*(2**0.5)
     r = app.cubeSide/8
@@ -765,6 +776,7 @@ def drawJack(app, canvas, xPos, yPos, grid):
     canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="red")
     pass
 
+# Draws 3D pieces for PLayer 1
 def drawDot(app, canvas, xPos, yPos, grid):
     z = -app.cubeSide/3*(2**0.5)
     r = app.cubeSide/8
@@ -775,6 +787,7 @@ def drawDot(app, canvas, xPos, yPos, grid):
     canvas.create_oval(xCtr-r,yCtr-r,xCtr+r,yCtr+r,fill="blue")
     pass
 
+# Draws pieces and lines of a single slice of the cube
 def drawPieceLayer(app, canvas, grid):
     for order in range(len(app.pieceOrder)):
         for pos in app.pieceOrder[order]:
@@ -801,7 +814,7 @@ def drawCubeLines(app, canvas, i):
         canvas.create_line(x0,y0,x1,y1,width=2)
     pass
 
-# Draws vertical wireframe lines for rotating cube
+# Draws vertical wireframe line segments for rotating cube
 def drawVertLines(app, canvas, xList, yList, i, grid):
     z1 = (app.cubeSide*grid/3 + app.cubeSide/6)*(2**0.5)
     z2 = (app.cubeSide*grid/3 - app.cubeSide/6)*(2**0.5)
@@ -811,7 +824,7 @@ def drawVertLines(app, canvas, xList, yList, i, grid):
     y1 = app.cubeCtr[1] - z2*app.cos + xList[i]*app.sin + yList[i]*app.sin
     canvas.create_line(x0,y0,x1,y1,width=2)
 
-# Draws current player/winner
+# Draws current player/winner text
 def drawCurrPlayerMsg(app, canvas):
     r = 30
     xCtr = app.width/3
@@ -847,13 +860,17 @@ def cube_redrawAll(app, canvas):
     drawPieces(app, canvas)
     drawCurrPlayerMsg(app, canvas)
     drawAngleMsg(app, canvas)
+    # Draws from bottom up if top view
     if app.angle >= 0:
+        # Alternates bewteen pieces and horizontal frame
         for grid in range(2*len(app.board)-2,-1,-1):
             if grid%2 == 0:
                 drawPieceLayer(app, canvas, grid//2)
             else:
                 drawCubeLines(app, canvas, 2-grid)
+    # Draws from top down if bottom view
     else:
+        # Alternates bewteen pieces and horizontal frame
         for grid in range(2*len(app.board)-1):
             if grid%2 == 0:
                 drawPieceLayer(app, canvas, grid//2)
@@ -861,9 +878,11 @@ def cube_redrawAll(app, canvas):
                 drawCubeLines(app, canvas, 2-grid)
     pass
 
+# Handles keypresses in win mode
 def win_keyPressed(app, event):
     appStarted(app)
 
+# Draws all text in win mode
 def win_redrawAll(app, canvas):
     if app.winnerBig:
         colorA = "#00d"

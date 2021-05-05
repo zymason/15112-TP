@@ -18,7 +18,7 @@ LAST_UPDATED  = datetime.date(year=2021, month=4, day=12)
 #   * Fix Windows-only bug: Position popup dialog box over app window (already works fine on Macs)
 #   * Add documentation
 #   * integrate sounds (probably from pyGame)
-#   * Improved methodIsOverridden to TopLevelApp and ModalApp
+#   * Improved methodIsOverridden to Ultimate_TTT and ModalApp
 #   * Save to animated gif and/or mp4 (with audio capture?)
 
 # Deferred changes:
@@ -99,7 +99,7 @@ LAST_UPDATED  = datetime.date(year=2021, month=4, day=12)
 #       * cmd/ctrl/alt-q: quit
 
 # Changes in v0.6:
-#   * Added fnPrefix option to TopLevelApp (so multiple TopLevelApp's can be in one file)
+#   * Added fnPrefix option to Ultimate_TTT (so multiple Ultimate_TTT's can be in one file)
 #   * Added showGraphics(drawFn) (for graphics-only drawings before we introduce animations)
 
 # Changes in v0.5:
@@ -147,7 +147,7 @@ LAST_UPDATED  = datetime.date(year=2021, month=4, day=12)
 #   * improved (if not perfect) exiting without that irksome Tkinter error/bug
 #   * app has a title in the titlebar (also shows window's dimensions)
 #   * supports Modes and ModalApp (see ModalApp and Mode, and also see TestModalApp example)
-#   * supports TopLevelApp (using top-level functions instead of subclasses and methods)
+#   * supports Ultimate_TTT (using top-level functions instead of subclasses and methods)
 #   * supports version checking with App.majorVersion, App.minorVersion, and App.version
 #   * logs drawing calls to support autograding views (still must write that autograder, but this is a very helpful first step)
 
@@ -651,20 +651,20 @@ class App(object):
         print(app.getQuitMessage())
 
 ####################################
-# TopLevelApp:
+# Ultimate_TTT:
 # (with top-level functions not subclassses and methods)
 ####################################
 
-class TopLevelApp(App):
+class Ultimate_TTT(App):
     _apps = dict() # maps fnPrefix to app
 
     def __init__(app, fnPrefix='', **kwargs):
-        if (fnPrefix in TopLevelApp._apps):
-            print(f'Quitting previous version of {fnPrefix} TopLevelApp.')
-            TopLevelApp._apps[fnPrefix].quit()
+        if (fnPrefix in Ultimate_TTT._apps):
+            print(f'Quitting previous version of {fnPrefix} Ultimate_TTT.')
+            Ultimate_TTT._apps[fnPrefix].quit()
         if ((fnPrefix != '') and ('title' not in kwargs)):
-            kwargs['title'] = f"TopLevelApp '{fnPrefix}'"
-        TopLevelApp._apps[fnPrefix] = app
+            kwargs['title'] = f"Ultimate_TTT '{fnPrefix}'"
+        Ultimate_TTT._apps[fnPrefix] = app
         app._fnPrefix = fnPrefix
         app._callersGlobals = inspect.stack()[1][0].f_globals
         app.mode = None
@@ -744,7 +744,7 @@ def showGraphics(drawFn, **kwargs):
             drawFn(app, canvas)
     app = GraphicsApp(**kwargs)
 '''
-runApp = TopLevelApp
+runApp = Ultimate_TTT
 
 print(f'Loaded cmu_112_graphics version {App.version} (last updated {App.lastUpdated})')
 
