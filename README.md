@@ -9,6 +9,7 @@ This program is coded using Python, so being able to run Python scripts is requi
 Run the following in your Terminal (Mac):
 
     python3 --verison
+
 If this is not 3.6.x or above, you will need to install the latest version by going to https://www.python.org/downloads/
 Once this is installed, you are all set!
 
