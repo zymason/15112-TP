@@ -12,7 +12,7 @@ Run the following in your Terminal (Mac):
 If this is not 3.6.x or above, you will need to install the latest version by going to https://www.python.org/downloads/
 Once this is installed, you are all set!
 
-Download and unzip the TP3.zip file, as this is the final version. Ensure that the TP3.py and the cmu_112_graphics.py files are both present in the same directory (this should be the case by default). You may either open and run TP3.py from an editor, or you can use Terminal (MacOS).
+Download and unzip the zip file from this page, as this is the final version. Ensure that the TP3.py and the cmu_112_graphics.py files are both present (this should be the case by default). You may now either open and run TP3.py from an editor, or you can use Terminal (MacOS).
 
 To use Terminal, right click on the unzipped folder and select "New Terminal at Folder", then run the following line:
 
