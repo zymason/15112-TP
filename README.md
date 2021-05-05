@@ -6,7 +6,7 @@ This project is a game of Ultimate Tic Tac Toe, where the winner of each spot on
 This program is coded using Python, so being able to run Python scripts is required.
 
 ### If you don't have Python 3 installed or are unsure:
-Run the following in your Terminal (Mac):
+Run the following in your Terminal (MacOS):
 
     python3 --verison
 
